@@ -22,6 +22,42 @@ public class IncidentPolisherTests
     }
 
     [Fact]
+    public void CreatePromptForLeadershipUsesLeadershipGuidance()
+    {
+        var prompt = IncidentPolishingRules.CreatePrompt(IncidentAudience.Leadership, "db latency issue");
+
+        Assert.Equal("Leadership", prompt.AudienceName);
+        Assert.Contains("executive briefing", prompt.UserPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("business impact", prompt.UserPrompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CreatePromptForCustomerUsesCustomerGuidance()
+    {
+        var prompt = IncidentPolishingRules.CreatePrompt(IncidentAudience.Customer, "db latency issue");
+
+        Assert.Equal("Customer", prompt.AudienceName);
+        Assert.Contains("customer-facing", prompt.UserPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("reassurance", prompt.UserPrompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task PolishAsyncWhenIncidentNoteIsTooLongReturnsValidationError()
+    {
+        var generator = Substitute.For<IAiTextGenerator>();
+        var polisher = new IncidentPolisher(generator);
+        var tooLongNote = new string('a', IncidentPolishingRules.MaxIncidentNoteLength + 1);
+
+        var result = await polisher.PolishAsync(
+            new PolishIncidentRequest(tooLongNote, IncidentAudience.Leadership),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("INVALID_INCIDENT_NOTE", result.Error!.Code);
+        await generator.DidNotReceiveWithAnyArgs().GenerateAsync(default!, default!, default);
+    }
+
+    [Fact]
     public async Task PolishAsyncWhenRequestIsValidInvokesAiAndReturnsPolishedIncident()
     {
         var generator = Substitute.For<IAiTextGenerator>();

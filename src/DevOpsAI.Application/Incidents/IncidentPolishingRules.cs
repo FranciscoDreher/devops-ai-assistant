@@ -25,6 +25,7 @@ public static class IncidentPolishingRules
     {
         var cleanNote = incidentNote.Trim();
         var audienceName = audience.ToString();
+        var audienceGuidance = GetAudienceGuidance(audience);
 
         var userPrompt = $"""
             Audience: {audienceName}
@@ -37,9 +38,23 @@ public static class IncidentPolishingRules
             - actionsTaken
             - currentStatus
             - nextSteps
+
+            Guidance for this audience:
+            - {audienceGuidance}
+            - Keep the tone factual, concise, and appropriate for an {audienceName.ToLowerInvariant()} audience.
             """;
 
         return new IncidentPrompt(audienceName, SystemPromptText, userPrompt);
+    }
+
+    private static string GetAudienceGuidance(IncidentAudience audience)
+    {
+        return audience switch
+        {
+            IncidentAudience.Leadership => "Provide an executive briefing focused on business impact, operational status, and the most relevant decisions or risks.",
+            IncidentAudience.Customer => "Write a customer-facing update with reassurance, clear status, and a practical explanation without unnecessary technical detail.",
+            _ => throw new ArgumentOutOfRangeException(nameof(audience), audience, "Unsupported incident audience.")
+        };
     }
 
     public static (bool IsValid, string Code, string Message) ValidateRequest(PolishIncidentRequest request)

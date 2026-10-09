@@ -124,3 +124,26 @@ Result:
 - 15 tests passed
 - 0 failed
 - Build succeeded
+
+## Senior Developer Review (AI)
+
+### Findings addressed
+
+- Fixed the actual audience-selection issue: prompt assembly now varies by `IncidentAudience` instead of only labeling the audience name.
+- Added regression coverage for audience-specific prompt construction and for overlong incident notes.
+- Verified the validation path still blocks invalid input before invoking the AI.
+
+### Review follow-ups (AI)
+
+- [x] [AI-Review][High] Audience-specific prompt generation was not actually differentiated by audience. Fixed in `IncidentPolishingRules.CreatePrompt` and covered by tests.
+- [x] [AI-Review][Medium] Missing regression tests for overlong incident notes and audience-specific prompt details. Added to `IncidentPolisherTests`.
+
+### Validation evidence
+
+`cd /home/fdreher/Documentos/projects/devops-ai-assistant && dotnet test tests/DevOpsAI.ApplicationTests/DevOpsAI.ApplicationTests.csproj --nologo`
+
+Result:
+
+- 8 tests executed
+- 8 passed
+- 0 failed
