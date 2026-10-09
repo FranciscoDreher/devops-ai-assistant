@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace DevOpsAI.Domain;
 
 public sealed record PolishedIncident
@@ -19,19 +21,19 @@ public sealed record PolishedIncident
         Impact = impact.Trim();
         CurrentStatus = currentStatus.Trim();
 
-        ActionsTaken = ValidateNonEmptyTextList(actionsTaken, nameof(actionsTaken));
-        NextSteps = ValidateNonEmptyTextList(nextSteps, nameof(nextSteps));
+        ActionsTaken = ValidateNonEmptyTextList(actionsTaken, nameof(actionsTaken)).ToImmutableArray();
+        NextSteps = ValidateNonEmptyTextList(nextSteps, nameof(nextSteps)).ToImmutableArray();
     }
 
     public string Summary { get; }
 
     public string Impact { get; }
 
-    public IReadOnlyList<string> ActionsTaken { get; }
+    public ImmutableArray<string> ActionsTaken { get; }
 
     public string CurrentStatus { get; }
 
-    public IReadOnlyList<string> NextSteps { get; }
+    public ImmutableArray<string> NextSteps { get; }
 
     private static List<string> ValidateNonEmptyTextList(IReadOnlyList<string> values, string parameterName)
     {
@@ -46,10 +48,11 @@ public sealed record PolishedIncident
         {
             if (string.IsNullOrWhiteSpace(value))
             {
-                continue;
+                throw new ArgumentException($"{parameterName} contains empty or whitespace entries.", parameterName);
             }
 
-            sanitized.Add(value.Trim());
+            var trimmed = value.Trim();
+            sanitized.Add(trimmed);
         }
 
         if (sanitized.Count == 0)
