@@ -10,7 +10,7 @@ Story / domain ticket
 
 ## Status
 
-Not started
+Completed
 
 ## Dependencies
 
@@ -75,6 +75,11 @@ Create the minimum domain concepts so the application can model the business sce
 The ticket is complete when the domain types are well-defined and reusable by the application layer without introducing forbidden coupling.
 
 ## Changes made
+
+- Added the domain enum `IncidentAudience` with `Leadership` and `Customer` values.
+- Added the immutable `PolishedIncident` contract that captures `Summary`, `Impact`, `ActionsTaken`, `CurrentStatus`, and `NextSteps`.
+- Enforced minimal validation for required strings and non-empty action/next-step collections.
+- Added unit tests for audience coverage and invariant validation in the Domain test project.
 
 ## Code review
 
