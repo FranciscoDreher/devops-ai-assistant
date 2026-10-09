@@ -20,11 +20,13 @@ public sealed class IncidentPolisher : IIncidentPolisher
     };
 
     private readonly IAiTextGenerator _aiTextGenerator;
-    private readonly IPromptProvider? _promptProvider;
+    private readonly IPromptProvider _promptProvider;
 
-    public IncidentPolisher(IAiTextGenerator aiTextGenerator, IPromptProvider? promptProvider = null)
+    public IncidentPolisher(IAiTextGenerator aiTextGenerator, IPromptProvider promptProvider)
     {
         ArgumentNullException.ThrowIfNull(aiTextGenerator);
+        ArgumentNullException.ThrowIfNull(promptProvider);
+
         _aiTextGenerator = aiTextGenerator;
         _promptProvider = promptProvider;
     }
@@ -41,11 +43,9 @@ public sealed class IncidentPolisher : IIncidentPolisher
             return PolishIncidentResult.Failure(validation.Code, validation.Message);
         }
 
-        var prompt = _promptProvider is null
-            ? IncidentPolishingRules.CreatePrompt(request.Audience, request.IncidentNote.Trim())
-            : await IncidentPolishingRules
-                .CreatePromptAsync(_promptProvider, request.Audience, request.IncidentNote.Trim(), cancellationToken)
-                .ConfigureAwait(false);
+        var prompt = await IncidentPolishingRules
+            .CreatePromptAsync(_promptProvider, request.Audience, request.IncidentNote.Trim(), cancellationToken)
+            .ConfigureAwait(false);
 
         try
         {

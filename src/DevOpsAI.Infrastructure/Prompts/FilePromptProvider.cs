@@ -45,17 +45,30 @@ public sealed class FilePromptProvider : IPromptProvider
 
     private static string ResolvePromptRootPath()
     {
-        var currentDirectory = new DirectoryInfo(AppContext.BaseDirectory);
+        var inspectedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        while (currentDirectory is not null)
+        foreach (var root in new[] { Environment.CurrentDirectory, AppContext.BaseDirectory })
         {
-            var candidate = Path.Combine(currentDirectory.FullName, "docs", "prompts", "incident-polisher");
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                continue;
+            }
+
+            var currentDirectory = new DirectoryInfo(Path.GetFullPath(root));
+            while (currentDirectory is not null)
+            {
+                inspectedDirectories.Add(currentDirectory.FullName);
+                currentDirectory = currentDirectory.Parent;
+            }
+        }
+
+        foreach (var directory in inspectedDirectories)
+        {
+            var candidate = Path.Combine(directory, "docs", "prompts", "incident-polisher");
             if (Directory.Exists(candidate))
             {
                 return candidate;
             }
-
-            currentDirectory = currentDirectory.Parent;
         }
 
         throw new DirectoryNotFoundException(

@@ -10,43 +10,6 @@ public static class IncidentPolishingRules
     public const string InvalidAiOutputCode = "INVALID_AI_OUTPUT";
     public const string AiGenerationFailedCode = "AI_GENERATION_FAILED";
 
-    private const string SystemPromptText = """
-        You are a DevOps incident communication assistant.
-        Transform rough technical incident notes into clear, professional updates.
-
-        Rules:
-        - Never invent facts.
-        - Do not claim an incident is resolved unless the input supports it.
-        - Keep language appropriate for the audience.
-        - Return valid JSON matching the required schema.
-        """;
-
-    public static IncidentPrompt CreatePrompt(IncidentAudience audience, string incidentNote)
-    {
-        var cleanNote = incidentNote.Trim();
-        var audienceName = audience.ToString();
-        var audienceGuidance = GetAudienceGuidance(audience);
-
-        var userPrompt = $"""
-            Audience: {audienceName}
-            Incident note:
-            {cleanNote}
-
-            Write a concise update in valid JSON with these fields:
-            - summary
-            - impact
-            - actionsTaken
-            - currentStatus
-            - nextSteps
-
-            Guidance for this audience:
-            - {audienceGuidance}
-            - Keep the tone factual, concise, and appropriate for an {audienceName.ToLowerInvariant()} audience.
-            """;
-
-        return new IncidentPrompt(audienceName, SystemPromptText, userPrompt);
-    }
-
     public static async Task<IncidentPrompt> CreatePromptAsync(
         IPromptProvider promptProvider,
         IncidentAudience audience,

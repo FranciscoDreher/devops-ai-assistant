@@ -38,6 +38,34 @@ public class FilePromptProviderTests
             provider.GetAudiencePromptAsync((IncidentAudience)999, CancellationToken.None));
     }
 
+    [Fact]
+    public async Task DefaultConstructorResolvesPromptRootFromCurrentDirectory()
+    {
+        var originalCurrentDirectory = Environment.CurrentDirectory;
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"devops-ai-prompt-default-{Guid.NewGuid():N}");
+        var projectRoot = Path.Combine(tempRoot, "repo");
+        var promptRoot = Path.Combine(projectRoot, "docs", "prompts", "incident-polisher");
+        Directory.CreateDirectory(promptRoot);
+
+        File.WriteAllText(Path.Combine(promptRoot, "system.md"), "System prompt content.");
+        File.WriteAllText(Path.Combine(promptRoot, "leadership.md"), "Leadership prompt content.");
+        File.WriteAllText(Path.Combine(promptRoot, "customer.md"), "Customer prompt content.");
+
+        try
+        {
+            Environment.CurrentDirectory = projectRoot;
+
+            var provider = new FilePromptProvider();
+            var prompt = await provider.GetSystemPromptAsync(CancellationToken.None);
+
+            Assert.Equal("System prompt content.", prompt);
+        }
+        finally
+        {
+            Environment.CurrentDirectory = originalCurrentDirectory;
+        }
+    }
+
     private static string CreatePromptRoot()
     {
         var root = Path.Combine(Path.GetTempPath(), $"devops-ai-prompt-tests-{Guid.NewGuid():N}");

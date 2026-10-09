@@ -89,3 +89,25 @@ The ticket is complete when the prompt system provides a configurable, maintaina
 - Keep prompts clear, brief, and focused on factuality rules.
 - Clearly document the difference between `system` and `audience` prompts.
 - Ensure the model always receives explicit, coherent context.
+
+## Final status after code review fixes
+
+The review findings were addressed as follows:
+
+- Removed the embedded system prompt from the application layer and kept prompt content as file assets only.
+- Made the prompt provider the required dependency for incident polishing so the runtime path always uses file-based prompts instead of a hardcoded fallback.
+- Hardened `FilePromptProvider` to resolve the prompt root from `Environment.CurrentDirectory` and `AppContext.BaseDirectory`, including parent directories, so it works in both local repo execution and built output scenarios.
+- Added the prompt files to the API output so the app can read them from runtime artifacts.
+- Registered the prompt provider in the API startup pipeline so the runtime wiring matches the architecture contract.
+- Added a regression test covering default resolution from the current project directory.
+
+## Verification evidence
+
+Executed successfully:
+
+- `dotnet test tests/DevOpsAI.ApplicationTests/DevOpsAI.ApplicationTests.csproj --nologo`
+  - Result: 13 tests passed, 0 failed.
+- `dotnet build devops-ai-assistant.sln --nologo`
+  - Result: full solution build succeeded.
+
+This task is complete and the prompt asset implementation is now aligned with the project architecture and the acceptance criteria.

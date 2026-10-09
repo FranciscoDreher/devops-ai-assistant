@@ -12,6 +12,14 @@
 
   <ItemGroup>
     <ProjectReference Include="../DevOpsAI.Application/DevOpsAI.Application.csproj" />
+    <ProjectReference Include="../DevOpsAI.Infrastructure/DevOpsAI.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="../docs/prompts/incident-polisher/**/*.*">
+      <Link>docs/prompts/incident-polisher/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
