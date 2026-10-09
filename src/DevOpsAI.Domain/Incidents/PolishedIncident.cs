@@ -37,10 +37,7 @@ public sealed record PolishedIncident
 
     private static List<string> ValidateNonEmptyTextList(IReadOnlyList<string> values, string parameterName)
     {
-        if (values.Count == 0)
-        {
-            throw new ArgumentException($"{parameterName} must contain at least one item.", parameterName);
-        }
+        ArgumentNullException.ThrowIfNull(values);
 
         var sanitized = new List<string>(values.Count);
 
@@ -51,13 +48,7 @@ public sealed record PolishedIncident
                 throw new ArgumentException($"{parameterName} contains empty or whitespace entries.", parameterName);
             }
 
-            var trimmed = value.Trim();
-            sanitized.Add(trimmed);
-        }
-
-        if (sanitized.Count == 0)
-        {
-            throw new ArgumentException($"{parameterName} must contain at least one non-empty item.", parameterName);
+            sanitized.Add(value.Trim());
         }
 
         return sanitized;

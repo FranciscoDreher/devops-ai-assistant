@@ -10,7 +10,7 @@ Story / application ticket
 
 ## Status
 
-Not started
+Completed
 
 ## Dependencies
 
@@ -85,10 +85,42 @@ The task is complete when the use-case flow is implemented, validated, and reusa
 
 ## Changes made
 
+- Added the Application use-case contracts for the incident polisher flow:
+  - `PolishIncidentRequest`
+  - `PolishIncidentResult`
+  - `IncidentPolishingError`
+  - `IncidentPrompt`
+  - `IIncidentPolisher`
+  - `IAiTextGenerator`
+- Implemented `IncidentPolisher` in Application with deterministic validation, prompt assembly, AI invocation, and structured error conversion.
+- Centralized the policy logic in `IncidentPolishingRules` to enforce request validation and prompt creation rules.
+- Kept provider-specific dependencies out of Application by using a small AI abstraction interface.
+- Updated domain validation so empty `actionsTaken` and `nextSteps` arrays are valid while blank entries remain rejected.
+- Added application-level tests covering invalid input, valid AI output, malformed AI output, and empty array output handling.
+
 ## Code review
+
+- Dependency direction is preserved: Application depends on Domain and owns orchestration logic; no provider SDK types are used in Application.
+- The use case is testable without ASP.NET or a real AI client.
+- Validation happens before invoking the AI to avoid unnecessary calls.
+- Failures are represented as explicit application errors instead of provider-specific exceptions.
 
 ## Implementation notes
 
-- Business errors must be explicit and not depend on JSON or concrete providers.
-- Centralize validation rules to improve maintainability.
-- Avoid embedding large prompt strings directly in C#.
+- Business errors are explicit and independent from JSON or concrete providers.
+- Validation rules are centralized to improve maintainability.
+- Prompt construction is deterministic and audience-aware.
+- The AI call is only executed when the request passes validation.
+- `CancellationToken` is propagated through the async generation call.
+
+## Verification
+
+Executed:
+
+`cd /home/fdreher/Documentos/projects/devops-ai-assistant && dotnet test devops-ai-assistant.sln --nologo`
+
+Result:
+
+- 15 tests passed
+- 0 failed
+- Build succeeded

@@ -30,16 +30,17 @@ public class IncidentContractsTests
     }
 
     [Fact]
-    public void PolishedIncidentShouldRejectEmptyCollections()
+    public void PolishedIncidentShouldAllowEmptyCollections()
     {
-        var exception = Assert.Throws<ArgumentException>(() => new PolishedIncident(
+        var incident = new PolishedIncident(
             summary: "Summary",
             impact: "Impact",
             actionsTaken: [],
             currentStatus: "Status",
-            nextSteps: ["Next step"]));
+            nextSteps: []);
 
-        Assert.Contains("actionsTaken", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(incident.ActionsTaken);
+        Assert.Empty(incident.NextSteps);
     }
 
     [Fact]
