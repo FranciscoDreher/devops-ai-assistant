@@ -47,6 +47,41 @@ public static class IncidentPolishingRules
         return new IncidentPrompt(audienceName, SystemPromptText, userPrompt);
     }
 
+    public static async Task<IncidentPrompt> CreatePromptAsync(
+        IPromptProvider promptProvider,
+        IncidentAudience audience,
+        string incidentNote,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(promptProvider);
+
+        var cleanNote = incidentNote.Trim();
+        var audienceName = audience.ToString();
+        var systemPrompt = await promptProvider
+            .GetSystemPromptAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var audiencePrompt = await promptProvider
+            .GetAudiencePromptAsync(audience, cancellationToken)
+            .ConfigureAwait(false);
+
+        var userPrompt = $"""
+            Audience: {audienceName}
+            Incident note:
+            {cleanNote}
+
+            {audiencePrompt}
+
+            Write a concise update in valid JSON with these fields:
+            - summary
+            - impact
+            - actionsTaken
+            - currentStatus
+            - nextSteps
+            """;
+
+        return new IncidentPrompt(audienceName, systemPrompt, userPrompt);
+    }
+
     private static string GetAudienceGuidance(IncidentAudience audience)
     {
         return audience switch

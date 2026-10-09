@@ -10,7 +10,7 @@ Story / prompt ticket
 
 ## Status
 
-Not started
+Completed
 
 ## Dependencies
 
@@ -74,7 +74,15 @@ The ticket is complete when the prompt system provides a configurable, maintaina
 
 ## Changes made
 
+- Added the prompt asset files under [docs/prompts/incident-polisher](../../../docs/prompts/incident-polisher): system, leadership, and customer prompts.
+- Added the application port `IPromptProvider` and wired the prompt orchestration to use it when available.
+- Implemented `FilePromptProvider` in the infrastructure layer to read prompt files deterministically by audience and fail with controlled exceptions for missing or unsupported prompts.
+- Added unit coverage for leadership/customer selection and invalid audience handling.
+
 ## Code review
+
+- Dependency direction preserved: Application owns the prompt contract; Infrastructure implements it.
+- Prompt content is externalized from code and can be changed without modifying the orchestration logic.
 
 ## Implementation notes
 
