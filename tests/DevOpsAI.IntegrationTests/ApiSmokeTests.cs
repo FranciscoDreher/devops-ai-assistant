@@ -13,6 +13,15 @@ public class ApiSmokeTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public void ApiAssemblyShouldNotReferenceInfrastructure()
+    {
+        var apiAssembly = typeof(Program).Assembly;
+        var referencedAssemblies = apiAssembly.GetReferencedAssemblies();
+
+        Assert.DoesNotContain(referencedAssemblies, assembly => assembly.Name == "DevOpsAI.Infrastructure");
+    }
+
+    [Fact]
     public async Task RootEndpointShouldReturnReadyStatusAsync()
     {
         using var client = _factory.CreateClient();
