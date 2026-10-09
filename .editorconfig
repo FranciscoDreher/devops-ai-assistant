@@ -17,16 +17,22 @@ indent_size = 4
 # C# conventions
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
-
-# Prefer explicit access modifiers
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
-
-# Use var when the type is apparent
 csharp_style_var_when_type_is_apparent = true:warning
-
-# Use expression-bodied members when appropriate
 csharp_style_expression_bodied_methods = false:warning
 
-# Avoid unused parameters and variables
+# Code analysis policy
 dotnet_diagnostic.IDE0059.severity = warning
 dotnet_diagnostic.IDE0060.severity = warning
+dotnet_diagnostic.CA1822.severity = none
+
+dotnet_diagnostic.CA2007.severity = warning
+
+dotnet_code_quality_unused_parameters = all:warning
+
+# Test project policy
+[**/*Tests/**/*.cs]
+# Keep tests readable and explicit.
+# No test should require networking or a live LLM endpoint.
+dotnet_diagnostic.CA2007.severity = none
+csharp_style_var_when_type_is_apparent = false
