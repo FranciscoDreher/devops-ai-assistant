@@ -1,10 +1,8 @@
 using DevOpsAI.Application;
-using DevOpsAI.Infrastructure.Prompts;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddSingleton<IPromptProvider, FilePromptProvider>();
 
 var app = builder.Build();
 

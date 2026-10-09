@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../DevOpsAI.Application/DevOpsAI.Application.csproj" />
-    <ProjectReference Include="../DevOpsAI.Infrastructure/DevOpsAI.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

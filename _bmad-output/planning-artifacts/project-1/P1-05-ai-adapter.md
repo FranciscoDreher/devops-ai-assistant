@@ -10,7 +10,7 @@ Story / infrastructure ticket
 
 ## Status
 
-Not started
+Completed
 
 ## Dependencies
 
@@ -78,10 +78,28 @@ The story is complete when infrastructure executes AI generation through the pro
 
 ## Changes made
 
+- Added `AiOptions` with environment-aware configuration for model, endpoint, and API key.
+- Implemented `MicrosoftExtensionsAiTextGenerator` in the infrastructure layer using `Microsoft.Extensions.AI` and `IChatClient`.
+- Kept the application interface `IAiTextGenerator` as the contract so the use case stays provider-agnostic.
+- Validated the generated response text for empty or unusable results before returning it.
+- Translated provider and infrastructure failures into structured `HttpRequestException` failures for clear handling.
+- Kept the API assembly free from direct infrastructure references, preserving the Clean Architecture dependency boundary.
+
 ## Code review
+
+- The application layer remains provider-agnostic and depends only on `IAiTextGenerator`.
+- The adapter is isolated in infrastructure, where provider-specific logic belongs.
+- Configuration is centralized via options/environment without coupling the use case to a vendor.
 
 ## Implementation notes
 
 - Keep error translation in a clear layer.
 - Separate provider configuration from use-case logic.
 - Define safe behavior when configuration is missing or the provider is unavailable.
+- Validation is intentionally conservative: empty provider output is rejected before use.
+
+## Verification
+
+- Ran `dotnet test --nologo` at the repository root.
+- Result: 24 tests passed, 0 failed.
+- This includes the API architecture smoke checks and the AI adapter integration tests.
