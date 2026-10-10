@@ -89,11 +89,18 @@ public sealed class IncidentPolisher : IIncidentPolisher
                 "AI output does not match the expected schema.",
                 prompt);
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex) when (IsMalformedAiResponse(ex))
         {
             return PolishIncidentResult.Failure(
                 IncidentPolishingRules.InvalidAiOutputCode,
                 "AI output does not match the expected schema.",
+                prompt);
+        }
+        catch (InvalidOperationException)
+        {
+            return PolishIncidentResult.Failure(
+                IncidentPolishingRules.AiGenerationFailedCode,
+                "AI generation failed.",
                 prompt);
         }
         catch (Exception)
@@ -103,6 +110,12 @@ public sealed class IncidentPolisher : IIncidentPolisher
                 "AI generation failed.",
                 prompt);
         }
+    }
+
+    private static bool IsMalformedAiResponse(InvalidOperationException exception)
+    {
+        return exception.Message.Contains("AI response", StringComparison.OrdinalIgnoreCase)
+            || exception.Message.Contains("schema", StringComparison.OrdinalIgnoreCase);
     }
 
     private static PolishedIncident DeserializeGeneratedIncident(string generatedText)

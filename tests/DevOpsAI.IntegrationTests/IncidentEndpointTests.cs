@@ -54,11 +54,70 @@ public class IncidentEndpointTests : IClassFixture<IncidentEndpointWebApplicatio
         Assert.Contains("INVALID_INCIDENT_NOTE", payload, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task PostPolishIncidentReturnsProblemDetailsWithCodeForUnhandledExceptionAsync()
+    {
+        using var client = new IncidentEndpointExceptionWebApplicationFactory().CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/incidents/polish", new
+        {
+            incidentNote = "Database was slow during deployment.",
+            audience = "leadership"
+        });
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+
+        var payload = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"code\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("500", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed record IncidentApiResponse
     {
         public string Summary { get; init; } = string.Empty;
 
         public string Audience { get; init; } = string.Empty;
+    }
+}
+
+public sealed class IncidentEndpointExceptionWebApplicationFactory : WebApplicationFactory<Program>
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IAiTextGenerator>();
+            services.RemoveAll<IPromptProvider>();
+
+            services.AddSingleton<IAiTextGenerator, ThrowingAiTextGenerator>();
+            services.AddSingleton<IPromptProvider, FakePromptProvider>();
+        });
+    }
+
+    private sealed class ThrowingAiTextGenerator : IAiTextGenerator
+    {
+        public Task<string> GenerateAsync(
+            string systemPrompt,
+            string userPrompt,
+            CancellationToken cancellationToken)
+        {
+            throw new InvalidOperationException("Simulated AI failure");
+        }
+    }
+
+    private sealed class FakePromptProvider : IPromptProvider
+    {
+        public Task<string> GetSystemPromptAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult("You are a DevOps incident communication assistant.");
+        }
+
+        public Task<string> GetAudiencePromptAsync(IncidentAudience audience, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(audience == IncidentAudience.Leadership
+                ? "Write an executive briefing focused on business impact, current operational status, actions taken, and recommended next steps."
+                : "Write a customer-facing update with reassurance, clear status, and plain language.");
+        }
     }
 }
 

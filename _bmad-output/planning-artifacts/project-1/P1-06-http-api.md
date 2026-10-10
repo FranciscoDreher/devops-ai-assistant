@@ -104,7 +104,12 @@ The story ends when the endpoint is accessible, documented, and follows the use-
 
 ### Verification performed
 
-- `dotnet test tests/DevOpsAI.IntegrationTests/DevOpsAI.IntegrationTests.csproj --filter IncidentEndpoint`
-- `dotnet test devops-ai-assistant.sln`
+- `dotnet test tests/DevOpsAI.IntegrationTests/DevOpsAI.IntegrationTests.csproj --filter IncidentEndpoint --nologo`
 
-Both commands completed successfully with zero failed tests.
+The endpoint-focused verification passed successfully after the follow-up fix, with zero failed tests.
+
+### Code review follow-up
+
+- Fixed the root cause where provider-level `InvalidOperationException` instances were being misclassified as validation failures and returned as `400 Bad Request` instead of `500 Internal Server Error`.
+- Standardized the global error payload so the API always emits a structured `ProblemDetails` response with a stable `code` extension for unexpected processing failures.
+- Added a regression test covering the unhandled exception path to keep the HTTP contract consistent.
