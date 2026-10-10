@@ -1,4 +1,4 @@
-using System.Net;
+using System.Text.Json;
 using DevOpsAI.Application;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
@@ -28,17 +28,17 @@ public sealed class MicrosoftExtensionsAiTextGenerator : IAiTextGenerator
 
         if (string.IsNullOrWhiteSpace(_options.Model))
         {
-            throw new InvalidOperationException("AI model is not configured. Set 'AI_MODEL' or 'Ai:Model'.");
+            throw new AiGenerationException("AI model is not configured. Set 'AI_MODEL' or 'Ai:Model'.");
         }
 
         if (string.IsNullOrWhiteSpace(_options.Endpoint))
         {
-            throw new InvalidOperationException("AI endpoint is not configured. Set 'AI_ENDPOINT' or 'Ai:Endpoint'.");
+            throw new AiGenerationException("AI endpoint is not configured. Set 'AI_ENDPOINT' or 'Ai:Endpoint'.");
         }
 
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
         {
-            throw new InvalidOperationException("AI API key is not configured. Set 'AI_API_KEY' or 'Ai:ApiKey'.");
+            throw new AiGenerationException("AI API key is not configured. Set 'AI_API_KEY' or 'Ai:ApiKey'.");
         }
 
         try
@@ -56,34 +56,54 @@ public sealed class MicrosoftExtensionsAiTextGenerator : IAiTextGenerator
             var generatedText = response?.Text;
             if (string.IsNullOrWhiteSpace(generatedText))
             {
-                throw new InvalidOperationException("The AI response text was empty.");
+                throw new AiGenerationException("The AI response text was empty.");
             }
 
-            return generatedText.Trim();
+            var sanitizedText = generatedText.Trim();
+            EnsureStructuredJson(sanitizedText);
+            return sanitizedText;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
-        catch (InvalidOperationException ex) when (
-            ex.Message.Contains("AI response text was empty", StringComparison.OrdinalIgnoreCase))
+        catch (AiGenerationException)
         {
             throw;
         }
-        catch (InvalidOperationException ex)
-        {
-            throw new HttpRequestException(
-                $"AI generation failed for model '{_options.Model}'. {ex.Message}",
-                ex,
-                HttpStatusCode.ServiceUnavailable);
-        }
         catch (Exception ex) when (
-            ex is HttpRequestException or TaskCanceledException or TimeoutException or NotSupportedException)
+            ex is TaskCanceledException or TimeoutException or NotSupportedException or JsonException)
         {
-            throw new HttpRequestException(
+            throw new AiGenerationException(
                 $"AI generation failed for model '{_options.Model}'. {ex.Message}",
-                ex,
-                HttpStatusCode.ServiceUnavailable);
+                ex);
+        }
+        catch (Exception ex)
+        {
+            throw new AiGenerationException(
+                $"AI generation failed for model '{_options.Model}'. {ex.Message}",
+                ex);
+        }
+    }
+
+    private static void EnsureStructuredJson(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            throw new AiGenerationException("The AI response text was empty.");
+        }
+
+        var trimmedText = text.TrimStart();
+        if (!trimmedText.StartsWith('{') &&
+            !trimmedText.StartsWith('['))
+        {
+            throw new AiGenerationException("The AI response was not valid JSON.");
+        }
+
+        using var document = JsonDocument.Parse(text);
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            throw new AiGenerationException("The AI response was not a JSON object.");
         }
     }
 }

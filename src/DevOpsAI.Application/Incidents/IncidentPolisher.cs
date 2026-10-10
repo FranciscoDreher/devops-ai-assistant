@@ -68,6 +68,13 @@ public sealed class IncidentPolisher : IIncidentPolisher
         {
             throw;
         }
+        catch (AiGenerationException)
+        {
+            return PolishIncidentResult.Failure(
+                IncidentPolishingRules.AiGenerationFailedCode,
+                "AI generation failed.",
+                prompt);
+        }
         catch (JsonException)
         {
             return PolishIncidentResult.Failure(

@@ -101,5 +101,17 @@ The story is complete when infrastructure executes AI generation through the pro
 ## Verification
 
 - Ran `dotnet test --nologo` at the repository root.
-- Result: 24 tests passed, 0 failed.
+- Result: 26 tests passed, 0 failed.
 - This includes the API architecture smoke checks and the AI adapter integration tests.
+
+## Review closure
+
+The four findings raised in the adversarial review were fixed before closing the task:
+
+1. Application composition was restored in the application layer through `AddAiServices`, keeping the API assembly free from a direct `DevOpsAI.Infrastructure` reference while preserving the dependency boundary.
+2. The AI adapter now validates provider output as structured JSON before returning it; plain-text or malformed provider responses are rejected explicitly.
+3. Provider and configuration failures are translated into application-level `AiGenerationException` errors and surfaced as structured AI-generation failures instead of leaking infrastructure exceptions.
+4. AI configuration is read from the `Ai` settings section and environment variables, with a clear fail-safe when the provider is not configured.
+
+Final validation command: `dotnet test --nologo 2>&1 | tail -n 200`
+Result: all tests passed, 26/26 successful.

@@ -3,6 +3,7 @@ using DevOpsAI.Application;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddAiServices(builder.Configuration);
 
 var app = builder.Build();
 
