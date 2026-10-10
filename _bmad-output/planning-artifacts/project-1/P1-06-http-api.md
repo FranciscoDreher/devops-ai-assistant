@@ -10,7 +10,7 @@ Story / API ticket
 
 ## Status
 
-Not started
+Completed
 
 ## Dependencies
 
@@ -81,10 +81,30 @@ The story ends when the endpoint is accessible, documented, and follows the use-
 
 ## Changes made
 
+- Added the `POST /api/incidents/polish` endpoint using a minimal API route in the API layer.
+- Mapped HTTP request payloads to `PolishIncidentRequest` and mapped domain results back to a stable JSON response contract.
+- Added deterministic validation for missing incident notes and unsupported audiences.
+- Centralized a safe exception handler returning `ProblemDetails`-style payloads without exposing internal details.
+- Added a health endpoint at `/health` and enabled OpenAPI in development.
+- Registered API services through a composition root that keeps the API dependent on the application contract rather than a concrete provider.
+- Added focused integration tests covering valid and invalid requests.
+
 ## Code review
+
+- The API uses the `IIncidentPolisher` application contract instead of reaching into infrastructure-specific providers.
+- Validation and provider failures are normalized to a deterministic HTTP contract and safe problem payloads.
+- Response serialization remains lightweight and consistent with the domain model.
+- The implementation keeps prompt sourcing isolated to the API composition layer while preserving the application dependency direction.
 
 ## Implementation notes
 
 - Keep serialization simple and consistent.
 - Use `ProblemDetails` or equivalent for structured errors when applicable.
 - Prepare the endpoint to evolve with projects 2 and 3 without coupling it to provider details.
+
+### Verification performed
+
+- `dotnet test tests/DevOpsAI.IntegrationTests/DevOpsAI.IntegrationTests.csproj --filter IncidentEndpoint`
+- `dotnet test devops-ai-assistant.sln`
+
+Both commands completed successfully with zero failed tests.
