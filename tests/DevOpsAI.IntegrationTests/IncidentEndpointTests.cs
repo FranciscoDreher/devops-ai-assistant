@@ -76,6 +76,25 @@ public class IncidentEndpointTests : IClassFixture<IncidentEndpointWebApplicatio
         Assert.Contains("INVALID_AUDIENCE", payload, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("1")]
+    public async Task PostPolishIncidentReturnsBadRequestForNumericAudienceAsync(string audience)
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/incidents/polish", new
+        {
+            incidentNote = "Database latency increased.",
+            audience
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = await response.Content.ReadAsStringAsync();
+        Assert.Contains("INVALID_AUDIENCE", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public async Task PostPolishIncidentReturnsInternalServerErrorWhenProviderFailsAsync()
     {

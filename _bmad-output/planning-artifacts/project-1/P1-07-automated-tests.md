@@ -10,7 +10,7 @@ Story / test ticket
 
 ## Status
 
-review
+done
 
 ## Dependencies
 
@@ -79,6 +79,11 @@ The task is complete when the test suite covers the main flow, validation, and e
 
 ## Code review
 
+- **[HIGH] Reject missing required AI output fields:** the application previously treated missing `actionsTaken` or `nextSteps` as empty arrays. It now rejects any missing required field; tests cover all five required fields.
+- **[MEDIUM] Enforce strict JSON syntax:** removed permissive handling for comments and trailing commas, with regression tests for both.
+- **[MEDIUM] Reject numeric audience aliases:** the API now accepts only the declared audience names, case-insensitively; integration tests confirm `"0"` and `"1"` return `400`.
+- Review findings corrected and verified below.
+
 ## Implementation notes
 
 - Prioritize contract and validation tests.
@@ -99,12 +104,14 @@ The task is complete when the test suite covers the main flow, validation, and e
 - Expanded application tests for unsupported audiences, leadership/customer prompt selection through the use case, valid output mapping, malformed JSON, and provider failure mapping.
 - Expanded endpoint tests for the response contract, unsupported audience, provider failure (`500`), and malformed generated output.
 - Corrected endpoint error mapping so invalid client input returns `400`, while malformed AI-generated output returns `500`.
-- Verification: `env -u AI_API_KEY -u AI__API_KEY dotnet test devops-ai-assistant.sln` passed (35 tests); `dotnet build devops-ai-assistant.sln --no-restore` passed with 0 warnings/errors; `dotnet format devops-ai-assistant.sln --verify-no-changes --no-restore` passed.
+- Addressed review findings by requiring all five AI output fields, rejecting non-standard JSON comments/trailing commas, and rejecting numeric audience aliases.
+- Verification: `env -u AI_API_KEY -u AI__API_KEY dotnet test devops-ai-assistant.sln --no-restore` passed (44 tests); `dotnet build devops-ai-assistant.sln --no-restore` passed with 0 warnings/errors; `dotnet format devops-ai-assistant.sln --verify-no-changes --no-restore` passed.
 - No real AI provider, external network, or API key was used.
 
 ## File List
 
 - `src/DevOpsAI.Api/Endpoints/IncidentEndpoints.cs`
+- `src/DevOpsAI.Application/Incidents/IncidentPolisher.cs`
 - `tests/DevOpsAI.ApplicationTests/Incidents/IncidentPolisherTests.cs`
 - `tests/DevOpsAI.IntegrationTests/Fakes/FakeAiTextGenerator.cs`
 - `tests/DevOpsAI.IntegrationTests/IncidentEndpointTests.cs`
@@ -113,3 +120,4 @@ The task is complete when the test suite covers the main flow, validation, and e
 ## Change Log
 
 - 2026-10-12: Added deterministic automated test coverage, corrected malformed AI output HTTP status handling, and marked P1-07 ready for review.
+- 2026-10-12: Resolved all P1-07 code review findings; enforced required AI fields and strict JSON, rejected numeric audience aliases, and added regression tests.

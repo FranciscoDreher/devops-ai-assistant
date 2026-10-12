@@ -14,9 +14,7 @@ public sealed class IncidentPolisher : IIncidentPolisher
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true
+        PropertyNameCaseInsensitive = true
     };
 
     private readonly IAiTextGenerator _aiTextGenerator;
@@ -126,15 +124,12 @@ public sealed class IncidentPolisher : IIncidentPolisher
             throw new InvalidOperationException("The AI response was null.");
         }
 
-        var actionsTaken = generatedIncident.ActionsTaken ?? Array.Empty<string>();
-        var nextSteps = generatedIncident.NextSteps ?? Array.Empty<string>();
-
         return new PolishedIncident(
             generatedIncident.Summary ?? throw new InvalidOperationException("The AI response is missing summary."),
             generatedIncident.Impact ?? throw new InvalidOperationException("The AI response is missing impact."),
-            actionsTaken,
+            generatedIncident.ActionsTaken ?? throw new InvalidOperationException("The AI response is missing actionsTaken."),
             generatedIncident.CurrentStatus ?? throw new InvalidOperationException("The AI response is missing currentStatus."),
-            nextSteps);
+            generatedIncident.NextSteps ?? throw new InvalidOperationException("The AI response is missing nextSteps."));
     }
 
     private sealed class GeneratedIncidentResponse

@@ -69,7 +69,8 @@ public static class IncidentEndpoints
         }
 
         if (Enum.TryParse<IncidentAudience>(audience, true, out var parsed) &&
-            Enum.IsDefined(parsed))
+            Enum.IsDefined(parsed) &&
+            string.Equals(Enum.GetName(parsed), audience, StringComparison.OrdinalIgnoreCase))
         {
             parsedAudience = parsed;
             return true;

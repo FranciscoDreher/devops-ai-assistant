@@ -159,6 +159,55 @@ public class IncidentPolisherTests
         Assert.Equal("INVALID_AI_OUTPUT", result.Error!.Code);
     }
 
+    [Theory]
+    [InlineData("summary")]
+    [InlineData("impact")]
+    [InlineData("actionsTaken")]
+    [InlineData("currentStatus")]
+    [InlineData("nextSteps")]
+    public async Task PolishAsyncWhenAiOutputIsMissingRequiredFieldReturnsStructuredError(string missingField)
+    {
+        var generator = Substitute.For<IAiTextGenerator>();
+        generator.GenerateAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<CancellationToken>())
+            .Returns(CreateValidAiResponseWithoutField(missingField));
+
+        var promptProvider = new FilePromptProvider(CreatePromptRoot());
+        var polisher = new IncidentPolisher(generator, promptProvider);
+
+        var result = await polisher.PolishAsync(
+            new PolishIncidentRequest("Database latency increased.", IncidentAudience.Customer),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("INVALID_AI_OUTPUT", result.Error!.Code);
+    }
+
+    [Theory]
+    [InlineData("{\"summary\":\"Summary\",\"impact\":\"Impact\",\"actionsTaken\":[],\"currentStatus\":\"Status\",\"nextSteps\":[],}")]
+    [InlineData("{\"summary\":\"Summary\",\"impact\":\"Impact\",\"actionsTaken\":[],\"currentStatus\":\"Status\",\"nextSteps\":[] // comment\n}")]
+    public async Task PolishAsyncWhenAiOutputContainsNonStandardJsonReturnsStructuredError(string generatedText)
+    {
+        var generator = Substitute.For<IAiTextGenerator>();
+        generator.GenerateAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<CancellationToken>())
+            .Returns(generatedText);
+
+        var promptProvider = new FilePromptProvider(CreatePromptRoot());
+        var polisher = new IncidentPolisher(generator, promptProvider);
+
+        var result = await polisher.PolishAsync(
+            new PolishIncidentRequest("Database latency increased.", IncidentAudience.Customer),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("INVALID_AI_OUTPUT", result.Error!.Code);
+    }
+
     [Fact]
     public async Task PolishAsyncWhenAiProviderFailsReturnsProviderError()
     {
@@ -213,5 +262,20 @@ public class IncidentPolisherTests
         File.WriteAllText(Path.Combine(folder, "customer.md"), "Write a customer-facing update using plain language, reassurance, and clear status. Avoid internal jargon, unnecessary technical detail, blame, and unsupported root-cause claims.");
 
         return folder;
+    }
+
+    private static string CreateValidAiResponseWithoutField(string missingField)
+    {
+        var response = new Dictionary<string, object?>
+        {
+            ["summary"] = "Summary",
+            ["impact"] = "Impact",
+            ["actionsTaken"] = Array.Empty<string>(),
+            ["currentStatus"] = "Status",
+            ["nextSteps"] = Array.Empty<string>()
+        };
+
+        response.Remove(missingField);
+        return System.Text.Json.JsonSerializer.Serialize(response);
     }
 }
