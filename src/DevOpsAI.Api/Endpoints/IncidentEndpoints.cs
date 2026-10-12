@@ -81,7 +81,7 @@ public static class IncidentEndpoints
 
     private static bool IsValidationError(string code)
     {
-        return code is "INVALID_INCIDENT_NOTE" or "INVALID_AUDIENCE" or "INVALID_AI_OUTPUT";
+        return code is "INVALID_INCIDENT_NOTE" or "INVALID_AUDIENCE";
     }
 
     private static ProblemDetails CreateProblemDetails(string code, string message, int statusCode)

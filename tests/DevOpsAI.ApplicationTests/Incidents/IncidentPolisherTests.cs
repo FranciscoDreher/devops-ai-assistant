@@ -65,6 +65,22 @@ public class IncidentPolisherTests
     }
 
     [Fact]
+    public async Task PolishAsyncWhenAudienceIsUnsupportedReturnsValidationError()
+    {
+        var generator = Substitute.For<IAiTextGenerator>();
+        var promptProvider = new FilePromptProvider(CreatePromptRoot());
+        var polisher = new IncidentPolisher(generator, promptProvider);
+
+        var result = await polisher.PolishAsync(
+            new PolishIncidentRequest("Database latency increased.", (IncidentAudience)999),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("INVALID_AUDIENCE", result.Error!.Code);
+        await generator.DidNotReceiveWithAnyArgs().GenerateAsync(default!, default!, default);
+    }
+
+    [Fact]
     public async Task PolishAsyncWhenRequestIsValidInvokesAiAndReturnsPolishedIncident()
     {
         var generator = Substitute.For<IAiTextGenerator>();
@@ -84,10 +100,41 @@ public class IncidentPolisherTests
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Incident);
         Assert.Equal("Database latency recovered", result.Incident!.Summary);
+        Assert.Equal("Users saw degraded response times", result.Incident.Impact);
+        Assert.Equal(["Restarted the affected pod"], result.Incident.ActionsTaken.ToArray());
+        Assert.Equal(["Continue monitoring database performance"], result.Incident.NextSteps.ToArray());
         Assert.Equal("Leadership", result.Prompt!.AudienceName);
         await generator.Received(1).GenerateAsync(
             Arg.Is<string>(prompt => prompt.Contains("DevOps incident communication assistant", StringComparison.OrdinalIgnoreCase)),
             Arg.Is<string>(prompt => prompt.Contains("db slow, restarted pod, looks OK now", StringComparison.Ordinal)),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(IncidentAudience.Leadership, "executive briefing")]
+    [InlineData(IncidentAudience.Customer, "customer-facing update")]
+    public async Task PolishAsyncUsesAudienceSpecificGuidance(
+        IncidentAudience audience,
+        string expectedGuidance)
+    {
+        var generator = Substitute.For<IAiTextGenerator>();
+        generator.GenerateAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<CancellationToken>())
+            .Returns("{\"summary\":\"Summary\",\"impact\":\"Impact\",\"actionsTaken\":[],\"currentStatus\":\"Status\",\"nextSteps\":[]}");
+
+        var promptProvider = new FilePromptProvider(CreatePromptRoot());
+        var polisher = new IncidentPolisher(generator, promptProvider);
+
+        var result = await polisher.PolishAsync(
+            new PolishIncidentRequest("A database incident occurred.", audience),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        await generator.Received(1).GenerateAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(prompt => prompt.Contains(expectedGuidance, StringComparison.OrdinalIgnoreCase)),
             Arg.Any<CancellationToken>());
     }
 
@@ -99,7 +146,7 @@ public class IncidentPolisherTests
                 Arg.Any<string>(),
                 Arg.Any<string>(),
                 Arg.Any<CancellationToken>())
-            .Returns("{\"summary\":\"\",\"impact\":\"Users saw degraded response times\",\"actionsTaken\":[],\"currentStatus\":\"Service is stable again\",\"nextSteps\":[\"Continue monitoring\"]}");
+            .Returns("{\"summary\":");
 
         var promptProvider = new FilePromptProvider(CreatePromptRoot());
         var polisher = new IncidentPolisher(generator, promptProvider);
@@ -110,6 +157,27 @@ public class IncidentPolisherTests
 
         Assert.False(result.IsSuccess);
         Assert.Equal("INVALID_AI_OUTPUT", result.Error!.Code);
+    }
+
+    [Fact]
+    public async Task PolishAsyncWhenAiProviderFailsReturnsProviderError()
+    {
+        var generator = Substitute.For<IAiTextGenerator>();
+        generator.GenerateAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<CancellationToken>())
+            .Returns<Task<string>>(_ => throw new AiGenerationException("Provider unavailable."));
+
+        var promptProvider = new FilePromptProvider(CreatePromptRoot());
+        var polisher = new IncidentPolisher(generator, promptProvider);
+
+        var result = await polisher.PolishAsync(
+            new PolishIncidentRequest("Database latency increased.", IncidentAudience.Customer),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("AI_GENERATION_FAILED", result.Error!.Code);
     }
 
     [Fact]

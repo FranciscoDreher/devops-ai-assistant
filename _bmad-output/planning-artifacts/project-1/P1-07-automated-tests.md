@@ -10,7 +10,7 @@ Story / test ticket
 
 ## Status
 
-Not started
+review
 
 ## Dependencies
 
@@ -49,11 +49,11 @@ Ensure the reliability of the MVP with repeatable automated tests that run witho
 
 ## Work to do
 
-- Implement a fake `IAiTextGenerator` for tests.
-- Add tests for request and AI output validation.
-- Add tests for valid and invalid use-case responses.
-- Add tests for endpoints returning `200` and `400` status codes.
-- Ensure the suite runs without any secrets in the environment.
+- [x] Implement a fake `IAiTextGenerator` for tests.
+- [x] Add tests for request and AI output validation.
+- [x] Add tests for valid and invalid use-case responses.
+- [x] Add tests for endpoints returning `200` and `400` status codes.
+- [x] Ensure the suite runs without any secrets in the environment.
 
 ## Technical constraints
 
@@ -84,3 +84,32 @@ The task is complete when the test suite covers the main flow, validation, and e
 - Prioritize contract and validation tests.
 - Keep fakes simple, deterministic, and representative of system behavior.
 - Tests should be runnable by any developer without access to secrets.
+
+## Dev Agent Record
+
+### Implementation Plan
+
+- Add deterministic application and endpoint coverage for audience selection, request validation, response mapping, malformed generated output, and provider failures.
+- Verify the public HTTP status contract and correct the classification of invalid AI output if tests expose a mismatch.
+- Run the complete solution tests without AI credentials, then build and formatting checks.
+
+### Completion Notes
+
+- Added a deterministic fake `IAiTextGenerator` for API integration tests; it returns a configured response or provider exception and never accesses an external service.
+- Expanded application tests for unsupported audiences, leadership/customer prompt selection through the use case, valid output mapping, malformed JSON, and provider failure mapping.
+- Expanded endpoint tests for the response contract, unsupported audience, provider failure (`500`), and malformed generated output.
+- Corrected endpoint error mapping so invalid client input returns `400`, while malformed AI-generated output returns `500`.
+- Verification: `env -u AI_API_KEY -u AI__API_KEY dotnet test devops-ai-assistant.sln` passed (35 tests); `dotnet build devops-ai-assistant.sln --no-restore` passed with 0 warnings/errors; `dotnet format devops-ai-assistant.sln --verify-no-changes --no-restore` passed.
+- No real AI provider, external network, or API key was used.
+
+## File List
+
+- `src/DevOpsAI.Api/Endpoints/IncidentEndpoints.cs`
+- `tests/DevOpsAI.ApplicationTests/Incidents/IncidentPolisherTests.cs`
+- `tests/DevOpsAI.IntegrationTests/Fakes/FakeAiTextGenerator.cs`
+- `tests/DevOpsAI.IntegrationTests/IncidentEndpointTests.cs`
+- `_bmad-output/planning-artifacts/project-1/P1-07-automated-tests.md`
+
+## Change Log
+
+- 2026-10-12: Added deterministic automated test coverage, corrected malformed AI output HTTP status handling, and marked P1-07 ready for review.
