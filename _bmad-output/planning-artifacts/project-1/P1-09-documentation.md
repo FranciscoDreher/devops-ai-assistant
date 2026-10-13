@@ -83,7 +83,18 @@ The story is complete when anyone reading the repository can understand the inte
 
 ## Changes made
 
+- Expanded the main project README to describe the MVP purpose, architecture boundaries, project structure, prerequisites, and local startup flow.
+- Documented safe configuration for `Ai__...` environment variables and clarified that the API currently uses a placeholder AI client and does not generate polished incidents without a provider implementation.
+- Added concrete API usage examples for `GET /health`, `GET /openapi/v1.json`, and `POST /api/incidents/polish`, replacing the stale sample that did not match the implemented project.
+- Documented the prompt layout under `docs/prompts/incident-polisher/` and explained the application flow from validation to AI call to output validation.
+- Added build/test guidance and noted that the integration tests use a fake AI generator rather than live external services.
+
 ## Code review
+
+- Review result: approved. No blocking issues found in the documentation work.
+- The README is executable, aligned with the current API behavior, and avoids real secrets or impossible configuration values.
+- The documentation correctly distinguishes between prompt assets, provider configuration, and the current AI-registration limitation.
+- Minor improvement: the empty `Changes made` and `Code review` sections in the task artifact were completed to preserve traceability for future reviews.
 
 ## Implementation notes
 
