@@ -1,21 +1,35 @@
+using System.Diagnostics;
 using System.Text.Json;
 using DevOpsAI.Application;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace DevOpsAI.Infrastructure.AI;
 
 public sealed class MicrosoftExtensionsAiTextGenerator : IAiTextGenerator
 {
+    private static readonly Action<ILogger, string, string, double, string, Exception?> GenerationFinished =
+        LoggerMessage.Define<string, string, double, string>(
+            LogLevel.Information,
+            new EventId(1, nameof(GenerationFinished)),
+            "AI generation {Outcome} for model {Model} in {ElapsedMilliseconds} ms. TraceId: {TraceId}");
+
     private readonly IChatClient _chatClient;
     private readonly AiOptions _options;
+    private readonly ILogger _logger;
 
-    public MicrosoftExtensionsAiTextGenerator(IChatClient chatClient, IOptions<AiOptions>? options = null)
+    public MicrosoftExtensionsAiTextGenerator(
+        IChatClient chatClient,
+        IOptions<AiOptions>? options = null,
+        ILogger<MicrosoftExtensionsAiTextGenerator>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(chatClient);
 
         _chatClient = chatClient;
         _options = options?.Value ?? AiOptions.FromEnvironment();
+        _logger = logger ?? NullLogger<MicrosoftExtensionsAiTextGenerator>.Instance;
     }
 
     public async Task<string> GenerateAsync(
@@ -41,6 +55,16 @@ public sealed class MicrosoftExtensionsAiTextGenerator : IAiTextGenerator
             throw new AiGenerationException("AI API key is not configured. Set 'AI_API_KEY' or 'Ai:ApiKey'.");
         }
 
+        if (_options.TimeoutSeconds is <= 0 or > 86_400)
+        {
+            throw new AiGenerationException("AI timeout configuration must be between 1 and 86400 seconds.");
+        }
+
+        var startedTimestamp = Stopwatch.GetTimestamp();
+        var outcome = "failed";
+        using var timeoutCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCancellationSource.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
+
         try
         {
             var response = await _chatClient
@@ -50,7 +74,7 @@ public sealed class MicrosoftExtensionsAiTextGenerator : IAiTextGenerator
                         new ChatMessage(ChatRole.User, userPrompt)
                     ],
                     new ChatOptions { ModelId = _options.Model },
-                    cancellationToken)
+                    timeoutCancellationSource.Token)
                 .ConfigureAwait(false);
 
             var generatedText = response?.Text;
@@ -61,28 +85,36 @@ public sealed class MicrosoftExtensionsAiTextGenerator : IAiTextGenerator
 
             var sanitizedText = generatedText.Trim();
             EnsureStructuredJson(sanitizedText);
+            outcome = "succeeded";
             return sanitizedText;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            outcome = "cancelled";
             throw;
+        }
+        catch (OperationCanceledException) when (timeoutCancellationSource.IsCancellationRequested)
+        {
+            outcome = "timed out";
+            throw new AiGenerationException("AI generation timed out.");
         }
         catch (AiGenerationException)
         {
             throw;
         }
-        catch (Exception ex) when (
-            ex is TaskCanceledException or TimeoutException or NotSupportedException or JsonException)
+        catch (Exception)
         {
-            throw new AiGenerationException(
-                $"AI generation failed for model '{_options.Model}'. {ex.Message}",
-                ex);
+            throw new AiGenerationException("AI generation failed.");
         }
-        catch (Exception ex)
+        finally
         {
-            throw new AiGenerationException(
-                $"AI generation failed for model '{_options.Model}'. {ex.Message}",
-                ex);
+            GenerationFinished(
+                _logger,
+                outcome,
+                _options.Model,
+                Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds,
+                Activity.Current is { IdFormat: ActivityIdFormat.W3C } activity ? activity.TraceId.ToString() : string.Empty,
+                null);
         }
     }
 

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace DevOpsAI.Infrastructure.AI;
 
 public sealed class AiOptions
@@ -10,14 +12,23 @@ public sealed class AiOptions
 
     public string ApiKey { get; set; } = string.Empty;
 
+    public int TimeoutSeconds { get; set; } = 30;
+
     public static AiOptions FromEnvironment()
     {
         return new AiOptions
         {
             Model = GetEnvironmentValue("AI_MODEL", "AI__MODEL", "gpt-4o-mini"),
             Endpoint = GetEnvironmentValue("AI_ENDPOINT", "AI__ENDPOINT", string.Empty),
-            ApiKey = GetEnvironmentValue("AI_API_KEY", "AI__API_KEY", string.Empty)
+            ApiKey = GetEnvironmentValue("AI_API_KEY", "AI__API_KEY", string.Empty),
+            TimeoutSeconds = GetTimeoutFromEnvironment()
         };
+    }
+
+    private static int GetTimeoutFromEnvironment()
+    {
+        var value = GetEnvironmentValue("AI_TIMEOUT_SECONDS", "AI__TIMEOUT_SECONDS", "30");
+        return int.Parse(value, CultureInfo.InvariantCulture);
     }
 
     private static string GetEnvironmentValue(string firstKey, string secondKey, string defaultValue)

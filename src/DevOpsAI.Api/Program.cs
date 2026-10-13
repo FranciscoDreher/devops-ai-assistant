@@ -22,13 +22,16 @@ app.UseExceptionHandler(exceptionHandlerApp =>
             await context.Response.WriteAsJsonAsync(CreateErrorProblemDetails(
                 "INCIDENT_PROCESSING_FAILED",
                 "The incident request could not be processed.",
-                StatusCodes.Status500InternalServerError)).ConfigureAwait(false);
+                StatusCodes.Status500InternalServerError,
+                RequestObservabilityMiddleware.GetTraceId(context))).ConfigureAwait(false);
             return;
         }
 
 #pragma warning disable CA1848
         var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("DevOpsAI.Api");
-        logger.LogError(exception, "Unhandled exception while processing incident request.");
+        logger.LogError(
+            "Unhandled exception while processing incident request. TraceId: {TraceId}",
+            RequestObservabilityMiddleware.GetTraceId(context));
 #pragma warning restore CA1848
 
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
@@ -37,9 +40,12 @@ app.UseExceptionHandler(exceptionHandlerApp =>
         await context.Response.WriteAsJsonAsync(CreateErrorProblemDetails(
             "INCIDENT_PROCESSING_FAILED",
             "The incident request could not be processed.",
-            StatusCodes.Status500InternalServerError)).ConfigureAwait(false);
+            StatusCodes.Status500InternalServerError,
+            RequestObservabilityMiddleware.GetTraceId(context))).ConfigureAwait(false);
     });
 });
+
+app.UseMiddleware<RequestObservabilityMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -50,7 +56,7 @@ app.MapGet("/", () => Results.Ok(new { service = "DevOpsAI.Api", status = "ready
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 app.MapIncidentEndpoints();
 
-ProblemDetails CreateErrorProblemDetails(string code, string detail, int statusCode)
+ProblemDetails CreateErrorProblemDetails(string code, string detail, int statusCode, string traceId)
 {
     var problem = new ProblemDetails
     {
@@ -61,6 +67,7 @@ ProblemDetails CreateErrorProblemDetails(string code, string detail, int statusC
     };
 
     problem.Extensions["code"] = code;
+    problem.Extensions["traceId"] = traceId;
     return problem;
 }
 

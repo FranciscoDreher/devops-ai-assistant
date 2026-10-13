@@ -14,7 +14,11 @@ public static class AiServiceCollectionExtensions
 
         services
             .AddOptions<AiOptions>()
-            .Bind(configuration.GetSection(AiOptions.SectionName));
+            .Bind(configuration.GetSection(AiOptions.SectionName))
+            .Validate(
+                options => options.TimeoutSeconds is > 0 and <= 86_400,
+                "Ai:TimeoutSeconds must be between 1 and 86400.")
+            .ValidateOnStart();
 
         services.AddSingleton<IChatClient>(_ => new MissingConfigurationChatClient());
         services.AddScoped<IAiTextGenerator, MicrosoftExtensionsAiTextGenerator>();

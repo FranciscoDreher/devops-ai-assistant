@@ -31,6 +31,7 @@ public class IncidentEndpointTests : IClassFixture<IncidentEndpointWebApplicatio
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False(string.IsNullOrWhiteSpace(response.Headers.GetValues("X-Trace-Id").Single()));
 
         var payload = await response.Content.ReadFromJsonAsync<IncidentApiResponse>();
 
@@ -109,7 +110,10 @@ public class IncidentEndpointTests : IClassFixture<IncidentEndpointWebApplicatio
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
 
         var payload = await response.Content.ReadAsStringAsync();
+        var traceId = response.Headers.GetValues("X-Trace-Id").Single();
         Assert.Contains("AI_GENERATION_FAILED", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("provider-secret-marker", payload, StringComparison.Ordinal);
+        Assert.Contains($"\"traceId\":\"{traceId}\"", payload, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -155,7 +159,7 @@ public sealed class IncidentEndpointExceptionWebApplicationFactory : WebApplicat
             services.AddSingleton<IAiTextGenerator>(
                 new FakeAiTextGenerator(
                     IncidentEndpointWebApplicationFactory.ValidAiResponse,
-                    new InvalidOperationException("Simulated AI failure")));
+                    new InvalidOperationException("Simulated AI failure: provider-secret-marker")));
             services.AddSingleton<IPromptProvider, FakePromptProvider>();
         });
     }

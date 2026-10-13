@@ -13,21 +13,30 @@ public static class IncidentEndpoints
         group.MapPost("/polish", async Task<IResult> (
             IncidentPolishRequestDto request,
             IIncidentPolisher polisher,
+            HttpContext context,
             CancellationToken cancellationToken) =>
         {
+            var traceId = RequestObservabilityMiddleware.GetTraceId(context);
+
             if (request is null)
             {
-                return Results.Json(CreateProblemDetails("INVALID_REQUEST", "Request body is required.", StatusCodes.Status400BadRequest), statusCode: StatusCodes.Status400BadRequest);
+                return Results.Json(
+                    CreateProblemDetails("INVALID_REQUEST", "Request body is required.", StatusCodes.Status400BadRequest, traceId),
+                    statusCode: StatusCodes.Status400BadRequest);
             }
 
             if (string.IsNullOrWhiteSpace(request.IncidentNote))
             {
-                return Results.Json(CreateProblemDetails("INVALID_INCIDENT_NOTE", "IncidentNote is required.", StatusCodes.Status400BadRequest), statusCode: StatusCodes.Status400BadRequest);
+                return Results.Json(
+                    CreateProblemDetails("INVALID_INCIDENT_NOTE", "IncidentNote is required.", StatusCodes.Status400BadRequest, traceId),
+                    statusCode: StatusCodes.Status400BadRequest);
             }
 
             if (!TryParseAudience(request.Audience, out var audience))
             {
-                return Results.Json(CreateProblemDetails("INVALID_AUDIENCE", "Audience is unsupported.", StatusCodes.Status400BadRequest), statusCode: StatusCodes.Status400BadRequest);
+                return Results.Json(
+                    CreateProblemDetails("INVALID_AUDIENCE", "Audience is unsupported.", StatusCodes.Status400BadRequest, traceId),
+                    statusCode: StatusCodes.Status400BadRequest);
             }
 
             var result = await polisher.PolishAsync(
@@ -42,7 +51,7 @@ public static class IncidentEndpoints
                     : StatusCodes.Status500InternalServerError;
 
                 return Results.Json(
-                    CreateProblemDetails(result.Error.Code, result.Error.Message, statusCode),
+                    CreateProblemDetails(result.Error.Code, result.Error.Message, statusCode, traceId),
                     statusCode: statusCode);
             }
 
@@ -85,7 +94,7 @@ public static class IncidentEndpoints
         return code is "INVALID_INCIDENT_NOTE" or "INVALID_AUDIENCE";
     }
 
-    private static ProblemDetails CreateProblemDetails(string code, string message, int statusCode)
+    private static ProblemDetails CreateProblemDetails(string code, string message, int statusCode, string traceId)
     {
         var problem = new ProblemDetails
         {
@@ -96,6 +105,7 @@ public static class IncidentEndpoints
         };
 
         problem.Extensions["code"] = code;
+        problem.Extensions["traceId"] = traceId;
         return problem;
     }
 
