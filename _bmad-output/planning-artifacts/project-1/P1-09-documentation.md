@@ -10,7 +10,7 @@ Story / documentation ticket
 
 ## Status
 
-Not started
+review
 
 ## Dependencies
 
@@ -53,6 +53,14 @@ Leave the operational baseline of the project documented and executable, coverin
 - Explain how to run the API and the tests.
 - Document the prompt structure and the use-case flow.
 
+## Tasks/Subtasks
+
+- [x] Update the README with the MVP purpose, structure, architecture, and local prerequisites.
+- [x] Document local startup and safe AI configuration without real credentials.
+- [x] Include the endpoint request/response shape and update the HTTP request example.
+- [x] Explain the prompt assets and incident-polishing use-case flow.
+- [x] Verify documentation against the implemented API, configuration, architecture, and test setup.
+
 ## Technical constraints
 
 - Do not include real secrets or valid keys.
@@ -82,3 +90,29 @@ The story is complete when anyone reading the repository can understand the inte
 - Keep the documentation brief but complete.
 - Prioritize practical examples from the MVP flow.
 - Include an explicit note about using environment variables or local secrets safely.
+
+## Dev Agent Record
+
+### Debug Log
+
+- Reviewed the API endpoint, AI options/registration, prompt files, project structure, and architecture before writing setup and usage instructions.
+- Documented that the current API registers a placeholder AI client; configuration values alone do not enable successful AI generation.
+- `dotnet build devops-ai-assistant.sln`: passed with 0 warnings and 0 errors.
+- `dotnet test devops-ai-assistant.sln`: passed, 49 tests total (7 unit, 24 application, 18 integration).
+- Started the API with the documented launch profile: `/health` returned 200 and `/openapi/v1.json` returned 200.
+- `git diff --check`: passed; checked documentation examples for credential-like strings with none found.
+
+### Completion Notes
+
+- Documented the current provider-registration limitation instead of implying that setting endpoint/key values alone enables generation.
+- P1-09 acceptance criteria and all five documentation tasks are addressed; no production code or dependencies were changed.
+
+## File List
+
+- `README.md`
+- `src/DevOpsAI.Api/DevOpsAI.Api.http`
+- `_bmad-output/planning-artifacts/project-1/P1-09-documentation.md`
+
+## Change Log
+
+- Expanded the README with setup, configuration, API contract, prompt flow, and architecture guidance; replaced the stale weather-forecast HTTP example with the implemented health and incident endpoints.

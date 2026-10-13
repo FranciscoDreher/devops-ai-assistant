@@ -1,6 +1,15 @@
 @DevOpsAI.Api_HostAddress = http://localhost:5198
 
-GET {{DevOpsAI.Api_HostAddress}}/weatherforecast/
+GET {{DevOpsAI.Api_HostAddress}}/health
 Accept: application/json
 
 ###
+
+# Requires a registered AI provider to return a successful response.
+POST {{DevOpsAI.Api_HostAddress}}/api/incidents/polish
+Content-Type: application/json
+
+{
+  "incidentNote": "Database latency increased after deployment and users experienced degraded performance. Restarted the affected pod and traffic recovered.",
+  "audience": "leadership"
+}
