@@ -1,6 +1,5 @@
 using DevOpsAI.Application;
 using DevOpsAI.Domain;
-using Microsoft.AspNetCore.Mvc;
 
 namespace DevOpsAI.Api.Endpoints;
 
@@ -16,26 +15,24 @@ public static class IncidentEndpoints
             HttpContext context,
             CancellationToken cancellationToken) =>
         {
-            var traceId = RequestObservabilityMiddleware.GetTraceId(context);
-
             if (request is null)
             {
                 return Results.Json(
-                    CreateProblemDetails("INVALID_REQUEST", "Request body is required.", StatusCodes.Status400BadRequest, traceId),
+                    RequestObservabilityMiddleware.CreateProblemDetails("INVALID_REQUEST", "Request body is required.", StatusCodes.Status400BadRequest, context),
                     statusCode: StatusCodes.Status400BadRequest);
             }
 
             if (string.IsNullOrWhiteSpace(request.IncidentNote))
             {
                 return Results.Json(
-                    CreateProblemDetails("INVALID_INCIDENT_NOTE", "IncidentNote is required.", StatusCodes.Status400BadRequest, traceId),
+                    RequestObservabilityMiddleware.CreateProblemDetails("INVALID_INCIDENT_NOTE", "IncidentNote is required.", StatusCodes.Status400BadRequest, context),
                     statusCode: StatusCodes.Status400BadRequest);
             }
 
             if (!TryParseAudience(request.Audience, out var audience))
             {
                 return Results.Json(
-                    CreateProblemDetails("INVALID_AUDIENCE", "Audience is unsupported.", StatusCodes.Status400BadRequest, traceId),
+                    RequestObservabilityMiddleware.CreateProblemDetails("INVALID_AUDIENCE", "Audience is unsupported.", StatusCodes.Status400BadRequest, context),
                     statusCode: StatusCodes.Status400BadRequest);
             }
 
@@ -51,7 +48,7 @@ public static class IncidentEndpoints
                     : StatusCodes.Status500InternalServerError;
 
                 return Results.Json(
-                    CreateProblemDetails(result.Error.Code, result.Error.Message, statusCode, traceId),
+                    RequestObservabilityMiddleware.CreateProblemDetails(result.Error.Code, result.Error.Message, statusCode, context),
                     statusCode: statusCode);
             }
 
@@ -92,21 +89,6 @@ public static class IncidentEndpoints
     private static bool IsValidationError(string code)
     {
         return code is "INVALID_INCIDENT_NOTE" or "INVALID_AUDIENCE";
-    }
-
-    private static ProblemDetails CreateProblemDetails(string code, string message, int statusCode, string traceId)
-    {
-        var problem = new ProblemDetails
-        {
-            Title = statusCode == StatusCodes.Status400BadRequest ? "Request validation failed." : "Incident processing failed.",
-            Status = statusCode,
-            Detail = message,
-            Type = "https://httpstatuses.com/" + statusCode
-        };
-
-        problem.Extensions["code"] = code;
-        problem.Extensions["traceId"] = traceId;
-        return problem;
     }
 
     public sealed record IncidentPolishRequestDto

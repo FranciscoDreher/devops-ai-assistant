@@ -1,6 +1,5 @@
 using DevOpsAI.Api;
 using DevOpsAI.Api.Endpoints;
-using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,11 +18,11 @@ app.UseExceptionHandler(exceptionHandlerApp =>
         {
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
             context.Response.ContentType = "application/problem+json";
-            await context.Response.WriteAsJsonAsync(CreateErrorProblemDetails(
+            await context.Response.WriteAsJsonAsync(RequestObservabilityMiddleware.CreateProblemDetails(
                 "INCIDENT_PROCESSING_FAILED",
                 "The incident request could not be processed.",
                 StatusCodes.Status500InternalServerError,
-                RequestObservabilityMiddleware.GetTraceId(context))).ConfigureAwait(false);
+                context)).ConfigureAwait(false);
             return;
         }
 
@@ -37,11 +36,11 @@ app.UseExceptionHandler(exceptionHandlerApp =>
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         context.Response.ContentType = "application/problem+json";
 
-        await context.Response.WriteAsJsonAsync(CreateErrorProblemDetails(
+        await context.Response.WriteAsJsonAsync(RequestObservabilityMiddleware.CreateProblemDetails(
             "INCIDENT_PROCESSING_FAILED",
             "The incident request could not be processed.",
             StatusCodes.Status500InternalServerError,
-            RequestObservabilityMiddleware.GetTraceId(context))).ConfigureAwait(false);
+            context)).ConfigureAwait(false);
     });
 });
 
@@ -55,21 +54,6 @@ if (app.Environment.IsDevelopment())
 app.MapGet("/", () => Results.Ok(new { service = "DevOpsAI.Api", status = "ready" }));
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 app.MapIncidentEndpoints();
-
-ProblemDetails CreateErrorProblemDetails(string code, string detail, int statusCode, string traceId)
-{
-    var problem = new ProblemDetails
-    {
-        Title = statusCode == StatusCodes.Status400BadRequest ? "Request validation failed." : "Incident processing failed.",
-        Status = statusCode,
-        Detail = detail,
-        Type = "https://httpstatuses.com/" + statusCode
-    };
-
-    problem.Extensions["code"] = code;
-    problem.Extensions["traceId"] = traceId;
-    return problem;
-}
 
 app.Run();
 

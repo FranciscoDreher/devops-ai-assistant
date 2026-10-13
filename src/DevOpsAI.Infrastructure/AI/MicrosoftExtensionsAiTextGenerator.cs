@@ -55,9 +55,9 @@ public sealed class MicrosoftExtensionsAiTextGenerator : IAiTextGenerator
             throw new AiGenerationException("AI API key is not configured. Set 'AI_API_KEY' or 'Ai:ApiKey'.");
         }
 
-        if (_options.TimeoutSeconds is <= 0 or > 86_400)
+        if (!AiOptions.IsValidTimeout(_options.TimeoutSeconds))
         {
-            throw new AiGenerationException("AI timeout configuration must be between 1 and 86400 seconds.");
+            throw new AiGenerationException($"AI timeout configuration must be between {AiOptions.MinTimeoutSeconds} and {AiOptions.MaxTimeoutSeconds} seconds.");
         }
 
         var startedTimestamp = Stopwatch.GetTimestamp();

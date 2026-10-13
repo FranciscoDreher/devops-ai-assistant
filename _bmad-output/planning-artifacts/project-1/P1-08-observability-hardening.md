@@ -10,7 +10,7 @@ Story / hardening ticket
 
 ## Status
 
-review
+done
 
 ## Dependencies
 
@@ -78,7 +78,17 @@ The task is considered complete when the system is observable, traceable, and se
 
 ## Changes made
 
+- Hardened AI timeout parsing so malformed `AI_TIMEOUT_SECONDS` or `AI__TIMEOUT_SECONDS` values fall back to the default 30-second timeout instead of crashing startup/runtime configuration processing.
+- Reused a shared `RequestObservabilityMiddleware.CreateProblemDetails(...)` helper across endpoint validation and the global exception handler to keep sanitized error payloads consistent.
+- Updated request trace handling to honor incoming W3C `traceparent` headers and `X-Trace-Id` values, ensuring request correlation survives across downstream execution and response headers.
+
 ## Code review
+
+### Findings fixed
+
+1. Timeout validation was fragile when config values were malformed. Resolved by centralizing timeout bounds in `AiOptions` and parsing with `int.TryParse`, falling back safely to the default timeout while preserving the 1–86400 validation contract.
+2. Trace correlation did not honor incoming upstream trace headers. Resolved by extracting the trace ID from W3C `traceparent` and `X-Trace-Id` before creating or reusing the request activity.
+3. Error payload construction was duplicated in the API and could drift over time. Resolved by centralizing the `ProblemDetails` factory used by both validation and global exception handling.
 
 ## Implementation notes
 

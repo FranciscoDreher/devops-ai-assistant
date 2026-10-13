@@ -183,6 +183,28 @@ public class MicrosoftExtensionsAiTextGeneratorTests
         Assert.Contains("JSON", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void FromEnvironmentUsesDefaultTimeoutForMalformedValues()
+    {
+        var previousTimeout = Environment.GetEnvironmentVariable("AI_TIMEOUT_SECONDS");
+        var previousDoubleUnderscoreTimeout = Environment.GetEnvironmentVariable("AI__TIMEOUT_SECONDS");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("AI_TIMEOUT_SECONDS", "not-a-number");
+            Environment.SetEnvironmentVariable("AI__TIMEOUT_SECONDS", null);
+
+            var options = AiOptions.FromEnvironment();
+
+            Assert.Equal(AiOptions.DefaultTimeoutSeconds, options.TimeoutSeconds);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("AI_TIMEOUT_SECONDS", previousTimeout);
+            Environment.SetEnvironmentVariable("AI__TIMEOUT_SECONDS", previousDoubleUnderscoreTimeout);
+        }
+    }
+
     private static IChatClient CreateSuccessfulChatClient()
     {
         var chatClient = Substitute.For<IChatClient>();

@@ -5,6 +5,9 @@ namespace DevOpsAI.Infrastructure.AI;
 public sealed class AiOptions
 {
     public const string SectionName = "Ai";
+    public const int MinTimeoutSeconds = 1;
+    public const int MaxTimeoutSeconds = 86_400;
+    public const int DefaultTimeoutSeconds = 30;
 
     public string Model { get; set; } = "gpt-4o-mini";
 
@@ -12,7 +15,12 @@ public sealed class AiOptions
 
     public string ApiKey { get; set; } = string.Empty;
 
-    public int TimeoutSeconds { get; set; } = 30;
+    public int TimeoutSeconds { get; set; } = DefaultTimeoutSeconds;
+
+    public static bool IsValidTimeout(int timeoutSeconds)
+    {
+        return timeoutSeconds is >= MinTimeoutSeconds and <= MaxTimeoutSeconds;
+    }
 
     public static AiOptions FromEnvironment()
     {
@@ -27,8 +35,15 @@ public sealed class AiOptions
 
     private static int GetTimeoutFromEnvironment()
     {
-        var value = GetEnvironmentValue("AI_TIMEOUT_SECONDS", "AI__TIMEOUT_SECONDS", "30");
-        return int.Parse(value, CultureInfo.InvariantCulture);
+        var value = GetEnvironmentValue("AI_TIMEOUT_SECONDS", "AI__TIMEOUT_SECONDS", DefaultTimeoutSeconds.ToString(CultureInfo.InvariantCulture));
+
+        if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var timeoutSeconds) &&
+            IsValidTimeout(timeoutSeconds))
+        {
+            return timeoutSeconds;
+        }
+
+        return DefaultTimeoutSeconds;
     }
 
     private static string GetEnvironmentValue(string firstKey, string secondKey, string defaultValue)
