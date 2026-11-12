@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using DevOpsAI.Rag.Domain.Documents;
 
 namespace DevOpsAI.Rag.UnitTests;
 
@@ -71,6 +72,29 @@ public class RagProjectBoundaryTests
 
             Assert.Empty(forbiddenReferences);
         }
+    }
+
+    [Fact]
+    public void DomainAssemblyDoesNotReferenceTransportPersistenceOrProviderFrameworks()
+    {
+        var forbiddenReferences = new[]
+        {
+            "Microsoft.AspNetCore",
+            "Microsoft.EntityFrameworkCore",
+            "Microsoft.Extensions.AI",
+            "Microsoft.Data.Sqlite",
+            "Azure.",
+            "OpenAI",
+            "OllamaSharp"
+        };
+
+        var references = typeof(KnowledgeDocument).Assembly
+            .GetReferencedAssemblies()
+            .Select(assembly => assembly.Name)
+            .OfType<string>();
+
+        Assert.DoesNotContain(references, reference => forbiddenReferences.Any(
+            forbidden => reference.StartsWith(forbidden, StringComparison.Ordinal)));
     }
 
     private static void AssertReferences(string project, params string[] expectedReferences)
