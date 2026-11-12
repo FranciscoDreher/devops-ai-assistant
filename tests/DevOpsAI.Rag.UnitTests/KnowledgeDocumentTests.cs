@@ -63,7 +63,7 @@ public class KnowledgeDocumentTests
     }
 
     [Fact]
-    public void DeleteRetainsContentAndHashForTraceability()
+    public void DeleteRemovesContentAndRetainsHashAndIdentityForTraceability()
     {
         var document = KnowledgeDocument.Create("runbook", "runbook.md", "Procedure.", CreatedAtUtc);
         var deletedAtUtc = CreatedAtUtc.AddMinutes(10);
@@ -72,8 +72,10 @@ public class KnowledgeDocumentTests
 
         Assert.Equal(KnowledgeDocumentStatus.Active, document.Status);
         Assert.Equal(KnowledgeDocumentStatus.Deleted, deleted.Status);
-        Assert.Equal(document.Content, deleted.Content);
+        Assert.Null(deleted.Content);
         Assert.Equal(document.ContentHash, deleted.ContentHash);
+        Assert.Equal(document.Id, deleted.Id);
+        Assert.Equal(document.FileName, deleted.FileName);
         Assert.Equal(document.Version, deleted.Version);
         Assert.Equal(deletedAtUtc, deleted.DeletedAtUtc);
     }

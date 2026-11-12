@@ -63,13 +63,13 @@ Implement the P2-02 domain contracts and their invariants, add only the Applicat
 ### Decisions
 
 - A replacement creates a new immutable snapshot with the same stable ID and an incremented version; the original snapshot remains unchanged.
-- Deletion creates a deleted snapshot retaining the original content and SHA-256 hash so that previous references remain traceable.
+- Deletion creates a tombstone retaining the document ID, filename, version, SHA-256 hash, and deletion timestamp, but not the source content. The document-store port persists that tombstone while atomically removing source content and searchable data.
 - Citations bind document ID, version, chunk ID, heading, and source line range; `GroundedAnswer` accepts citations only when all those values match retrieved candidates.
 - A concrete Infrastructure persistence mapper is deferred to P2-04, where the persistence representation is introduced. P2-02 establishes the dependency direction through the Application port and existing Infrastructure-to-Domain project reference without introducing premature persistence entities.
 
 ### Completion Notes
 
-Added `KnowledgeDocument`, `DocumentChunk`, `RetrievalCandidate`, `CitationReference`, and `GroundedAnswer` with immutable values and deterministic validation. Added `IRunbookDocumentStore` as an Application-owned port using Domain types and cancellation-aware async methods. Removed the now-unused Domain `ProjectMarker` from the empty skeleton so that the layer contains only domain models/contracts. Tests verify hashes, invalid/empty values, snapshot replacement and deletion, chunk locations, normalized scores, citation membership and document-version traceability, and Domain dependency boundaries.
+Added `KnowledgeDocument`, `DocumentChunk`, `RetrievalCandidate`, `CitationReference`, and `GroundedAnswer` with immutable values and deterministic validation. Added `IRunbookDocumentStore` as an Application-owned port using Domain types and cancellation-aware async methods. Removed the now-unused Domain `ProjectMarker` from the empty skeleton so that the layer contains only domain models/contracts. Tests verify hashes, invalid/empty values, snapshot replacement and deletion, chunk locations, normalized scores, citation membership and document-version traceability, and Domain dependency boundaries. Review fixes ensure deleted snapshots do not retain source content, the port explicitly deletes searchable data, and chunk citation lines stay within their source document.
 
 Validation completed with .NET SDK 10.0.404: `dotnet build devops-ai-assistant.sln --no-restore` passed with 0 warnings and 0 errors; `dotnet test devops-ai-assistant.sln --no-restore` passed all 85 tests; `dotnet format devops-ai-assistant.sln --verify-no-changes --no-restore --include ...` passed for all changed C# files. No Project 1 source or dependencies were changed.
 
@@ -93,6 +93,7 @@ Validation completed with .NET SDK 10.0.404: `dotnet build devops-ai-assistant.s
 ## Change Log
 
 - 2026-11-12: Added Project 2 domain models, lifecycle and citation invariants, an Application-owned document-store port, and offline tests; removed the obsolete empty Domain marker; solution build, tests, and scoped format verification pass.
+- 2026-11-12: Tightened deletion and source-location invariants: tombstones retain traceability metadata without content, the document-store contract includes searchable-data deletion, and chunks reject ranges beyond their active source document.
 
 ## Status
 

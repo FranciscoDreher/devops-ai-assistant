@@ -19,16 +19,6 @@ public class GroundedAnswerTests
     }
 
     [Fact]
-    public void CandidateRejectsChunkFromDeletedDocument()
-    {
-        var document = KnowledgeDocument.Create("runbook", "runbook.md", "Text", CreatedAtUtc)
-            .Delete(CreatedAtUtc.AddMinutes(1));
-        var chunk = new DocumentChunk("chunk-1", document, 0, "Text", null, 1, 1);
-
-        Assert.Throws<ArgumentException>(() => new RetrievalCandidate(chunk, 0.8));
-    }
-
-    [Fact]
     public void CitationCopiesTrustedChunkMetadata()
     {
         var chunk = CreateChunk();

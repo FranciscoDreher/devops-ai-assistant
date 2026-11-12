@@ -8,7 +8,7 @@ public sealed class KnowledgeDocument
     private KnowledgeDocument(
         string id,
         string fileName,
-        string content,
+        string? content,
         int version,
         string contentHash,
         DateTimeOffset createdAtUtc,
@@ -29,7 +29,7 @@ public sealed class KnowledgeDocument
 
     public string FileName { get; }
 
-    public string Content { get; }
+    public string? Content { get; }
 
     public string ContentHash { get; }
 
@@ -110,7 +110,7 @@ public sealed class KnowledgeDocument
         return new KnowledgeDocument(
             Id,
             FileName,
-            Content,
+            content: null,
             Version,
             ContentHash,
             CreatedAtUtc,

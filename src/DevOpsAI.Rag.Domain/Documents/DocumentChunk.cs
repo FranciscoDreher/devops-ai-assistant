@@ -30,6 +30,22 @@ public sealed record DocumentChunk
             throw new ArgumentOutOfRangeException(nameof(endLine), "The ending source line cannot precede the start.");
         }
 
+        if (document.Status != KnowledgeDocumentStatus.Active)
+        {
+            throw new ArgumentException("Chunks can only be created for active documents.", nameof(document));
+        }
+
+        var documentContent = document.Content
+            ?? throw new ArgumentException("The document must retain content to create a chunk.", nameof(document));
+        var sourceLineCount = CountLines(documentContent);
+
+        if (endLine > sourceLineCount)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(endLine),
+                "The ending source line cannot exceed the document's line count.");
+        }
+
         Id = id.Trim();
         Document = document;
         Ordinal = ordinal;
@@ -52,4 +68,17 @@ public sealed record DocumentChunk
     public int StartLine { get; }
 
     public int EndLine { get; }
+
+    private static int CountLines(string content)
+    {
+        using var reader = new StringReader(content);
+        var lineCount = 0;
+
+        while (reader.ReadLine() is not null)
+        {
+            lineCount++;
+        }
+
+        return lineCount;
+    }
 }
