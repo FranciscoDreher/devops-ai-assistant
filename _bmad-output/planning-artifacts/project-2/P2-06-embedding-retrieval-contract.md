@@ -1,47 +1,47 @@
 # P2-06 - Embedding generation and retrieval contract
 
 - ID: P2-06
-- Título: Embedding generation and retrieval contract
-- Tipo: User Story
+- Title: Embedding generation and retrieval contract
+- Type: User Story
 
-## Descripción
-Como módulo RAG, necesitamos una capa de embeddings y un contrato de recuperación que permita comparar consultas con chunks y devolver candidatos con relevancia ordenada para que la generación responda solo con evidencia disponible.
+## Description
+As a RAG module, we need an embedding layer and a retrieval contract that can compare queries with chunks and return relevance-ranked candidates so that generation uses only available evidence.
 
-## Objetivo
-Definir los puertos y la implementación mínima para generar embeddings, consultar el índice vectorial local y devolver candidatos de recuperación con scores y metadatos de fuente.
+## Objective
+Define the ports and minimum implementation for generating embeddings, querying the local vector index, and returning retrieval candidates with scores and source metadata.
 
-## Contexto técnico
-La arquitectura exige que la generación y la recuperación estén separadas. El sistema local debe soportar integración con `Microsoft.Extensions.AI` y un adaptador local con embeddings para validar end-to-end sin depender de Azure ni de proveedores externos para la MVP.
+## Technical Context
+The architecture requires generation and retrieval to remain separate. The local system must support integration with `Microsoft.Extensions.AI` and a local embedding adapter so the MVP can be validated end to end without Azure or external providers.
 
-## Alcance específico
-- Definir `ITextEmbeddingGenerator` y su contrato para generar embeddings a partir de texto.
-- Definir `IRunbookKnowledgeIndex` para indexar y consultar candidatos relevantes.
-- Incorporar la capa de búsqueda por similitud local con threshold configurado y top-k controlado.
-- Asegurar que la respuesta de recuperación incluye ids de chunk y puntuación del sistema para pasar a la etapa de generación.
-- Preparar la evaluación offline con un conjunto fijo de preguntas y relevancia conocida.
+## Scope
+- Define `ITextEmbeddingGenerator` and its contract for generating embeddings from text.
+- Define `IRunbookKnowledgeIndex` for indexing and querying relevant candidates.
+- Add local similarity search with a configured threshold and controlled top-k.
+- Ensure retrieval results include chunk IDs and system-generated scores for the generation stage.
+- Prepare offline evaluation using a fixed set of questions with known relevance.
 
-## Criterios de aceptación verificables
-1. La capa Application define los puertos de embeddings y búsqueda, sin depender de implementaciones concretas.
-2. La receta de recuperación retorna resultados ordenados por relevancia y con un nivel explícito de suficiencia para la respuesta.
-3. Los resultados pueden mapearse a chunks exactos y al documento de origen.
-4. La búsqueda de contenido insuficiente se puede distinguir de una falla técnica de proveedor o almacenamiento.
+## Verifiable Acceptance Criteria
+1. Application defines embedding and search ports without depending on concrete implementations.
+2. Retrieval returns relevance-ranked results with an explicit sufficiency level for answering.
+3. Results can be mapped to exact chunks and their source documents.
+4. Insufficient content can be distinguished from provider or storage failures.
 
-## Componentes afectados
+## Affected Components
 - `src/DevOpsAI.Rag.Application/Ports/`
 - `src/DevOpsAI.Rag.Infrastructure/Embeddings/`
 - `src/DevOpsAI.Rag.Infrastructure/Persistence/`
 - `tests/DevOpsAI.Rag.ApplicationTests/`
 
-## Dependencias
-- Depende de `P2-04` y `P2-05`.
-- Requiere los chunks indexados y los modelos de entidad para la búsqueda relevante.
+## Dependencies
+- Depends on `P2-04` and `P2-05`.
+- Requires indexed chunks and entity models for relevance search.
 
-## Tests esperados
-- Pruebas de similitud y ranking con corpus controlado.
-- Pruebas de threshold y selección de top-k.
-- Pruebas de insuficiente evidencia frente a errores de infraestructura.
+## Expected Tests
+- Similarity and ranking tests with a controlled corpus.
+- Threshold and top-k selection tests.
+- Tests distinguishing insufficient evidence from infrastructure errors.
 
 ## Definition of Done
-- Existe un contrato claro para embeddings y recuperación local.
-- La capa de búsqueda puede devolver resultados útiles para una pregunta del corpus real.
-- Las decisiones de relevancia y threshold quedan deterministas y comprobables.
+- A clear contract exists for local embeddings and retrieval.
+- The search layer can return useful results for a question about the real corpus.
+- Relevance and threshold decisions are deterministic and verifiable.

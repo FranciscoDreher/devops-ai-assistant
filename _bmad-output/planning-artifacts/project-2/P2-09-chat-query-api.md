@@ -1,48 +1,48 @@
 # P2-09 - Chat query API and insufficient-evidence handling
 
 - ID: P2-09
-- Título: Chat query API and insufficient-evidence handling
-- Tipo: User Story
+- Title: Chat query API and insufficient-evidence handling
+- Type: User Story
 
-## Descripción
-Como usuario de soporte técnico, necesito consultar el corpus usando lenguaje natural y recibir una respuesta basada en evidencia recuperada con referencias verificables, o una abstención clara cuando la información no está disponible.
+## Description
+As a technical support user, I need to query the corpus in natural language and receive an answer based on retrieved evidence with verifiable references, or a clear abstention when the information is unavailable.
 
-## Objetivo
-Exponer la capa de consulta y respuesta sobre HTTP, incorporando recuperación, generación grounded y manejo de evidencia insuficiente.
+## Objective
+Expose the query and answer layer over HTTP, incorporating retrieval, grounded generation, and insufficient-evidence handling.
 
-## Contexto técnico
-La API de chat es la pieza de valor del MVP: debe recuperar chunks relevantes y generar una respuesta útil y segura, sin inventar hechos. La política debe establecer claramente qué ocurre cuando no hay suficientes pasajes para responder una pregunta.
+## Technical Context
+The chat API is the MVP's core value: it must retrieve relevant chunks and generate a useful, safe answer without inventing facts. The policy must clearly define what happens when there are not enough passages to answer a question.
 
-## Alcance específico
-- Definir endpoint para `POST /api/chat/query` (o equivalente) con pregunta y contexto del usuario.
-- Integrar casos de uso de `AskRunbookQuestion` con recuperación y generación grounded.
-- Definir estructura de respuesta con respuesta final, citas, comprobación de evidencia y estado de resultado.
-- Establecer el patrón de abstención cuando no se recupera evidencia suficiente o cuando los chunks no dan cobertura.
-- Asegurar que el transporte no revela secretos ni llama a proveedores externos durante pruebas sin configuración.
+## Scope
+- Define an endpoint for `POST /api/chat/query` (or equivalent) with a question and user context.
+- Integrate the `AskRunbookQuestion` use case with retrieval and grounded generation.
+- Define a response structure containing the final answer, citations, evidence assessment, and result status.
+- Establish an abstention pattern when evidence is insufficient or chunks do not cover the question.
+- Ensure the transport does not reveal secrets or call external providers during tests without configuration.
 
-## Criterios de aceptación verificables
-1. Una consulta con evidencia suficiente devuelve una respuesta acompañada por referencias a documentos/chunks recuperados.
-2. Una consulta sin evidencia suficiente devuelve un estado explícito de insuficiente información y no genera hechos no soportados.
-3. La API devuelve resultados estructurados con estado del sistema y referencias verificables.
-4. Las respuestas contienen solo información referenciada por el corpus cargado.
-5. El transporte y los DTOs no incluyen detalles de infraestructura ni implementación del proveedor.
+## Verifiable Acceptance Criteria
+1. A query with sufficient evidence returns an answer accompanied by references to retrieved documents/chunks.
+2. A query without sufficient evidence returns an explicit insufficient-information status and generates no unsupported facts.
+3. The API returns structured results with system status and verifiable references.
+4. Answers contain only information supported by the loaded corpus.
+5. Transport and DTOs contain no Infrastructure or provider implementation details.
 
-## Componentes afectados
+## Affected Components
 - `src/DevOpsAI.Rag.Api/Endpoints/`
 - `src/DevOpsAI.Rag.Api/Contracts/`
 - `src/DevOpsAI.Rag.Application/Chat/`
 - `src/DevOpsAI.Rag.Infrastructure/Generation/`
 
-## Dependencias
-- Depende de `P2-06`, `P2-07` y `P2-08`.
-- Requiere la existencia del pipeline de recuperación, generación grounded y API de documentos.
+## Dependencies
+- Depends on `P2-06`, `P2-07`, and `P2-08`.
+- Requires the retrieval pipeline, grounded generation, and document API.
 
-## Tests esperados
-- Pruebas de integración del endpoint con corpus controlado.
-- Casos de respuesta correcta y de insuficiente evidencia.
-- Verificación de la presencia y validez de citas referencias.
+## Expected Tests
+- Endpoint integration tests with a controlled corpus.
+- Successful-answer and insufficient-evidence cases.
+- Verification that citations are present and valid.
 
 ## Definition of Done
-- La consulta de chat responde con evidencia verificable y decisiones claras sobre insuficiencia.
-- La API presenta un contrato consistente para clientes HTTP.
-- Se confirma que el resultado final no depende de conocimiento externo no recuperado.
+- Chat queries return verifiable evidence and make clear decisions about insufficient evidence.
+- The API presents a consistent contract to HTTP clients.
+- The final result is confirmed not to depend on unretrieved external knowledge.

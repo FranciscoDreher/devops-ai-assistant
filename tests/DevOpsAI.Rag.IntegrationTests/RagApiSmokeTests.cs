@@ -1,5 +1,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DevOpsAI.Rag.IntegrationTests;
 
@@ -22,5 +24,13 @@ public class RagApiSmokeTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("healthy", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DefaultHostUrlBindsToLoopback()
+    {
+        var configuration = _factory.Services.GetRequiredService<IConfiguration>();
+
+        Assert.Equal("http://127.0.0.1:5082", configuration["Urls"]);
     }
 }

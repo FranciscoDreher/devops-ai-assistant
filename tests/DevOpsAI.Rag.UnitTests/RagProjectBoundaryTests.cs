@@ -32,12 +32,20 @@ public class RagProjectBoundaryTests
     {
         foreach (var project in ProductionProjects)
         {
-            var project1References = GetProjectReferences(project)
+            var project1References = GetTransitiveProjectReferences(project)
                 .Where(reference => reference.StartsWith("DevOpsAI.", StringComparison.Ordinal))
                 .Where(reference => !reference.StartsWith("DevOpsAI.Rag.", StringComparison.Ordinal));
 
             Assert.Empty(project1References);
         }
+    }
+
+    [Fact]
+    public void DomainDoesNotDependOnInfrastructureTransitively()
+    {
+        Assert.DoesNotContain(
+            "DevOpsAI.Rag.Infrastructure",
+            GetTransitiveProjectReferences("DevOpsAI.Rag.Domain"));
     }
 
     [Fact]
@@ -80,6 +88,51 @@ public class RagProjectBoundaryTests
             .Descendants("ProjectReference")
             .Select(reference => (string?)reference.Attribute("Include"))
             .OfType<string>()
+            .Select(Path.GetFileNameWithoutExtension)
+            .OfType<string>()
+            .ToArray();
+    }
+
+    private static string[] GetTransitiveProjectReferences(string projectName)
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var visitedProjects = new HashSet<string>(StringComparer.Ordinal);
+        var pendingProjects = new Queue<string>();
+        pendingProjects.Enqueue(projectName);
+
+        while (pendingProjects.TryDequeue(out var currentProject))
+        {
+            if (!visitedProjects.Add(currentProject))
+            {
+                continue;
+            }
+
+            var projectPath = Path.Combine(
+                repositoryRoot,
+                "src",
+                currentProject,
+                $"{currentProject}.csproj");
+
+            foreach (var reference in ReadProjectReferences(projectPath))
+            {
+                pendingProjects.Enqueue(reference);
+            }
+        }
+
+        visitedProjects.Remove(projectName);
+        return visitedProjects.ToArray();
+    }
+
+    private static string[] ReadProjectReferences(string projectPath)
+    {
+        var projectDirectory = Path.GetDirectoryName(projectPath)
+            ?? throw new InvalidOperationException($"Project path '{projectPath}' has no directory.");
+
+        return XDocument.Load(projectPath)
+            .Descendants("ProjectReference")
+            .Select(reference => (string?)reference.Attribute("Include"))
+            .OfType<string>()
+            .Select(include => Path.GetFullPath(Path.Combine(projectDirectory, include)))
             .Select(Path.GetFileNameWithoutExtension)
             .OfType<string>()
             .ToArray();

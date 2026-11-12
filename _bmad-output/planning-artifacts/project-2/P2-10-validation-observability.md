@@ -1,33 +1,33 @@
-# P2-10 - Automated validation, evaluation and observability
+# P2-10 - Automated validation, evaluation, and observability
 
 - ID: P2-10
-- Título: Automated validation, evaluation and observability
-- Tipo: User Story
+- Title: Automated validation, evaluation, and observability
+- Type: User Story
 
-## Descripción
-Como equipo que valida el MVP, necesitamos pruebas reproducibles y observabilidad suficiente para confirmar que el sistema recupera información relevante, genera respuestas con citas válidas y no se rompe en contextos de error o reinicio del proceso.
+## Description
+As the team validating the MVP, we need reproducible tests and sufficient observability to confirm that the system retrieves relevant information, generates answers with valid citations, and remains reliable in error scenarios or after process restarts.
 
-## Objetivo
-Establecer la capa de validación automatizada, métricas de evaluación y trazabilidad operacional para la MVP del RAG local.
+## Objective
+Establish automated validation, evaluation metrics, and operational traceability for the local RAG MVP.
 
-## Contexto técnico
-El proyecto exige mediciones offline sobre corpus controlado y validación contra respuestas esperadas. Además, la solución no debe depender de claves reales ni de LLMs externos en pruebas normales; la observabilidad debe registrar duraciones y estados sin exponer contenido sensible.
+## Technical Context
+The project requires offline measurements against a controlled corpus and validation against expected results. The solution must not depend on real keys or external LLMs in routine tests; observability must record durations and outcomes without exposing sensitive content.
 
-## Alcance específico
-- Crear conjunto básico de pruebas de aplicación e integración para generación, citas y recuperación.
-- Definir una estrategia de evaluación local con preguntas tipo y nivel de relevancia conocido.
-- Registrar métricas básicas de latencia, resultados correctos, respuestas con citas y casos de insuficiente evidencia.
-- Verificar la coherencia de resultados tras reinicio del proceso y cambios de documento.
-- Preparar el estado para futuras mejoras post-MVP sin introducir complejidad innecesaria.
+## Scope
+- Create a baseline set of application and integration tests for generation, citations, and retrieval.
+- Define a local evaluation strategy using representative questions with known relevance.
+- Record basic metrics for latency, successful outcomes, answers with citations, and insufficient-evidence cases.
+- Verify result consistency after process restarts and document changes.
+- Prepare for future post-MVP improvements without introducing unnecessary complexity.
 
-## Criterios de aceptación verificables
-1. Las pruebas automatizadas pueden ejecutarse sin claves reales ni acceso a redes externas.
-2. La evaluación mide al menos recuperación relevante y validez de citas.
-3. Las respuestas con contenido insuficiente se distinguen claramente de fallas técnicas.
-4. Los logs y métricas no contienen contenido sensible de usuario o documentos.
-5. La colección local se valida al menos en una secuencia de ingestión, consulta, reemplazo y eliminación.
+## Verifiable Acceptance Criteria
+1. Automated tests run without real keys or external network access.
+2. Evaluation measures at least relevant retrieval and citation validity.
+3. Insufficient-content answers are clearly distinguished from technical failures.
+4. Logs and metrics contain no sensitive user or document content.
+5. The local collection is validated through at least an ingestion, query, replacement, and deletion sequence.
 
-## Componentes afectados
+## Affected Components
 - `tests/DevOpsAI.Rag.UnitTests/`
 - `tests/DevOpsAI.Rag.ApplicationTests/`
 - `tests/DevOpsAI.Rag.IntegrationTests/`
@@ -35,16 +35,16 @@ El proyecto exige mediciones offline sobre corpus controlado y validación contr
 - `docs/api/`
 - `src/DevOpsAI.Rag.Api/ErrorHandling/`
 
-## Dependencias
-- Depende de todas las historias anteriores.
-- Se ejecuta cuando el MVP ya puede soportar flujo real de consultas y persistencia.
+## Dependencies
+- Depends on all preceding stories.
+- Starts when the MVP can support a real query and persistence flow.
 
-## Tests esperados
-- Suite completa de pruebas de integración de flujo end-to-end.
-- Evaluación con corpus controlado y comprobación de tasa de citas válidas.
-- Validación de observabilidad y logging seguro.
+## Expected Tests
+- Full end-to-end integration test suite.
+- Evaluation with a controlled corpus and valid-citation checks.
+- Observability and safe-logging validation.
 
 ## Definition of Done
-- El proyecto cuenta con un conjunto de pruebas automatizadas que validan la funcionalidad central del MVP.
-- Las respuestas, citas y recuperación se pueden evaluar sin depender de un entorno de producción.
-- La solución entrega una base sólida de verificación y observabilidad para futuras evoluciones de Project 2.
+- The project has automated tests covering the MVP's core functionality.
+- Answers, citations, and retrieval can be evaluated without a production environment.
+- The solution provides a solid verification and observability foundation for future Project 2 evolution.

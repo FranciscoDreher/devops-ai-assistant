@@ -1,10 +1,10 @@
 # Project 2 Backlog — Runbook Chatbot (RAG)
 
-## Objetivo
+## Objective
 
-Este backlog define un conjunto de historias de usuario independientes y ordenadas por dependencia técnica para construir la MVP de Project 2. La prioridad refleja la secuencia mínima necesaria para soportar validación, persistencia, recuperación y generación con referencias verificables, sin introducir decisiones arquitectónicas fuera del alcance del proyecto.
+This backlog defines a set of independent user stories ordered by technical dependencies to build the Project 2 MVP. The priority reflects the minimum sequence needed to support validation, persistence, retrieval, and generation with verifiable references, without introducing architectural decisions outside the project's scope.
 
-## Orden recomendado de implementación
+## Recommended Implementation Order
 
 1. [P2-01 - Solution skeleton and project boundaries](./P2-01-solution-skeleton.md)
 2. [P2-02 - Domain models and core invariants](./P2-02-domain-models.md)
@@ -15,8 +15,8 @@ Este backlog define un conjunto de historias de usuario independientes y ordenad
 7. [P2-07 - Grounded answer generation and citation validation](./P2-07-grounded-answer-generation.md)
 8. [P2-08 - Document management API endpoints](./P2-08-document-management-api.md)
 9. [P2-09 - Chat query API and insufficient-evidence handling](./P2-09-chat-query-api.md)
-10. [P2-10 - Automated validation, evaluation and observability](./P2-10-validation-observability.md)
+10. [P2-10 - Automated validation, evaluation, and observability](./P2-10-validation-observability.md)
 
-## Primera historia lista para implementar
+## First Story Ready for Implementation
 
-La primera historia lista para implementar es [P2-01 - Solution skeleton and project boundaries](./P2-01-solution-skeleton.md). Proporciona la base mínima de estructura, referencias y configuración sin introducir lógica de negocio ni decisiones de flujo RAG.
+The first story ready for implementation is [P2-01 - Solution skeleton and project boundaries](./P2-01-solution-skeleton.md). It provides the minimum structure, references, and configuration without introducing business logic or RAG flow decisions.

@@ -1,49 +1,49 @@
 # P2-08 - Document management API endpoints
 
 - ID: P2-08
-- Título: Document management API endpoints
-- Tipo: User Story
+- Title: Document management API endpoints
+- Type: User Story
 
-## Descripción
-Como operador de la base de conocimiento, necesito una API HTTP para añadir, reemplazar, listar y eliminar documentos para mantener el corpus disponible para consultas sin intervención manual sobre archivos locales.
+## Description
+As a knowledge-base operator, I need an HTTP API to add, replace, list, and delete documents so that the corpus is available for queries without manually manipulating local files.
 
-## Objetivo
-Exponer los casos de uso de documentos a través de endpoints HTTP con contratos de DTO, códigos de estado y manejo de errores consistentes.
+## Objective
+Expose document use cases through HTTP endpoints with DTO contracts, status codes, and consistent error handling.
 
-## Contexto técnico
-La API de Project 2 debe seguir el patrón Minimal API y separar transporte, composición de dependencias y contratos de entrada/salida. Los endpoints deben mapear solicitudes HTTP sobre los casos de uso de Application sin filtrar infraestructura o detalles de SQLite.
+## Technical Context
+The Project 2 API must follow the Minimal API pattern and separate transport, dependency composition, and input/output contracts. Endpoints must map HTTP requests to Application use cases without exposing Infrastructure or SQLite details.
 
-## Alcance específico
-- Definir endpoints para `PUT /api/documents/{documentId}` y `DELETE /api/documents/{documentId}`.
-- Definir consultas de listado y recuperación de estado de documentos.
-- Validar la entrada HTTP en el transporte y mantener la lógica de negocio en Application.
-- Definir códigos de error para validación, no encontrado, contenido inválido y falla técnica.
-- Garantizar que notas, errores y logs no revelen contenido sensitivo.
+## Scope
+- Define endpoints for `PUT /api/documents/{documentId}` and `DELETE /api/documents/{documentId}`.
+- Define queries for listing documents and retrieving their status.
+- Validate HTTP input at the transport boundary and keep business logic in Application.
+- Define error codes for validation, not found, invalid content, and technical failures.
+- Ensure diagnostics, errors, and logs do not reveal sensitive content.
 
-## Criterios de aceptación verificables
-1. La API expone solo contratos HTTP y no tipos de infraestructura directa.
-2. Cada operación devuelve un resultado claro: éxito, validación fallida, recurso inexistente o error inesperado.
-3. Un documento con contenido inválido no se indexa ni reemplaza estado previo.
-4. Las operaciones de listado y borrado reflejan el estado real del corpus.
-5. El transporte usa la capa de aplicación como interfaz lógica y no lógica de persistencia.
+## Verifiable Acceptance Criteria
+1. The API exposes HTTP contracts only and does not directly use Infrastructure types.
+2. Each operation returns a clear result: success, validation failure, missing resource, or unexpected error.
+3. A document with invalid content is not indexed and does not replace the previous state.
+4. Listing and deletion operations reflect the actual corpus state.
+5. The transport uses the Application layer as its logical interface and contains no persistence logic.
 
-## Componentes afectados
+## Affected Components
 - `src/DevOpsAI.Rag.Api/Endpoints/`
 - `src/DevOpsAI.Rag.Api/Contracts/`
 - `src/DevOpsAI.Rag.Api/ErrorHandling/`
 - `src/DevOpsAI.Rag.Api/Program.cs`
 - `src/DevOpsAI.Rag.Api/DependencyInjection.cs`
 
-## Dependencias
-- Depende de `P2-03`, `P2-04` y `P2-05`.
-- Requiere las decisiones de estado de documento y de validación para que la API sea consistente.
+## Dependencies
+- Depends on `P2-03`, `P2-04`, and `P2-05`.
+- Requires document status and validation decisions to keep the API consistent.
 
-## Tests esperados
-- Pruebas de integración de endpoints con TestHost.
-- Casos de error HTTP para validación, recurso inexistente y errores de infraestructura.
-- Verificación de respuestas del documento antes y después del reemplazo.
+## Expected Tests
+- Endpoint integration tests using TestHost.
+- HTTP error cases for validation, missing resources, and infrastructure failures.
+- Verification of document responses before and after replacement.
 
 ## Definition of Done
-- Los endpoints de documentos están implementados y documentados por contrato.
-- La API refleja el estado real del corpus local sin exponer detalles de almacenamiento.
-- Las respuestas de error y estado están claramente definidas para operaciones críticas.
+- Document endpoints are implemented and documented by contract.
+- The API reflects the actual local corpus state without exposing storage details.
+- Error responses and statuses are clearly defined for critical operations.

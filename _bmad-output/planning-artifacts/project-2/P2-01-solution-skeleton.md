@@ -1,34 +1,34 @@
 # P2-01 - Solution skeleton and project boundaries
 
 - ID: P2-01
-- Título: Solution skeleton and project boundaries
-- Tipo: User Story
+- Title: Solution skeleton and project boundaries
+- Type: User Story
 
-## Descripción
-Como equipo de ingeniería del proyecto, necesitamos una estructura de solución y límites de proyecto claros para Project 2 para poder desarrollar el módulo Runbook Chatbot sin acoplarlo al código de Project 1 ni introducir dependencias no previstas.
+## Description
+As the project's engineering team, we need a clear solution structure and project boundaries for Project 2 so that we can develop the Runbook Chatbot module without coupling it to Project 1 code or introducing unplanned dependencies.
 
-## Objetivo
-Crear la base mínima del módulo RAG: proyectos, referencias, configuración compartida, convenciones y separación de responsabilidades entre Domain, Application, Infrastructure y API.
+## Objective
+Create the minimum foundation for the RAG module: projects, references, shared configuration, conventions, and separation of responsibilities among Domain, Application, Infrastructure, and API.
 
-## Contexto técnico
-Project 2 debe vivir dentro de la solución actual de .NET y seguir la arquitectura Clean Architecture definida en `ARCHITECTURE.md` y `PROJECT-2-ARCHITECTURE.md`. La base debe separar dominio, casos de uso, puertos, infraestructura y API sin tocar Project 1 ni crear un patrón de reutilización prematuro.
+## Technical Context
+Project 2 must live in the current .NET solution and follow the Clean Architecture defined in `ARCHITECTURE.md` and `PROJECT-2-ARCHITECTURE.md`. The foundation must separate the domain, use cases, ports, infrastructure, and API without changing Project 1 or creating a premature reuse pattern.
 
-## Alcance específico
-- Crear los proyectos de `DevOpsAI.Rag.Domain`, `DevOpsAI.Rag.Application`, `DevOpsAI.Rag.Infrastructure` y `DevOpsAI.Rag.Api` dentro de la solución.
-- Configurar referencias correctas siguiendo la dirección `Api -> Application -> Domain` y `Infrastructure -> Application/Domain`.
-- Mantener `Project 1` intacto y sin referencias cruzadas.
-- Asegurar que el proyecto API sea un host mínimo vía ASP.NET Core con configuración básica.
-- Preparar la base para xUnit/NSubstitute y pruebas de integración del módulo.
-- Definir el conjunto de paquetes esenciales y configuraciones de formato/análisis del repositorio.
+## Scope
+- Create the `DevOpsAI.Rag.Domain`, `DevOpsAI.Rag.Application`, `DevOpsAI.Rag.Infrastructure`, and `DevOpsAI.Rag.Api` projects in the solution.
+- Configure references to follow `Api -> Application -> Domain` and `Infrastructure -> Application/Domain`.
+- Keep Project 1 intact and free of cross-project references.
+- Ensure that the API project is a minimal ASP.NET Core host with basic configuration.
+- Prepare the foundation for xUnit/NSubstitute and module integration tests.
+- Define the essential package set and repository formatting/analyzer configuration.
 
-## Criterios de aceptación verificables
-1. La solución incluye los cuatro proyectos de Project 2 y todos se agregan a `devops-ai-assistant.sln`.
-2. No existen referencias de Project 2 hacia Project 1 ni a SDKs específicos de proveedor desde el Domain o Application.
-3. El proyecto API compila con una configuración mínima sin lógica de negocio.
-4. El proyecto Infrastructure queda preparado para implementar puertos de persistencia y LLM/RAG y no se mezclan dependencias de infraestructura con Domain.
-5. Las pruebas unitarias/integración del módulo cuentan con estructura inicial y ejecutan compilación sin requerir proveedores externos.
+## Verifiable Acceptance Criteria
+1. The solution includes all four Project 2 projects and registers them in `devops-ai-assistant.sln`.
+2. Project 2 has no references to Project 1, and Domain or Application has no references to provider-specific SDKs.
+3. The API project builds with minimal configuration and no business logic.
+4. The Infrastructure project is ready to implement persistence and LLM/RAG ports, with no infrastructure dependencies mixed into Domain.
+5. The module's unit/integration test projects have an initial structure and compile without external providers.
 
-## Componentes afectados
+## Affected Components
 - `src/DevOpsAI.Rag.Domain/`
 - `src/DevOpsAI.Rag.Application/`
 - `src/DevOpsAI.Rag.Infrastructure/`
@@ -37,22 +37,22 @@ Project 2 debe vivir dentro de la solución actual de .NET y seguir la arquitect
 - `tests/DevOpsAI.Rag.ApplicationTests/`
 - `tests/DevOpsAI.Rag.IntegrationTests/`
 - `devops-ai-assistant.sln`
-- `Directory.Build.props` / `Directory.Packages.props` (solo si la estructura de paquetes exige ajuste)
+- `Directory.Build.props` / `Directory.Packages.props` (only if the package structure requires changes)
 
-## Dependencias
-- Depende de la aprobación del alcance del proyecto definido en `ARCHITECTURE.md` y `PROJECT-2-ARCHITECTURE.md`.
-- Requiere la existencia de la base del repositorio con .NET 10 y convenios de estilo.
+## Dependencies
+- Depends on approval of the project scope defined in `ARCHITECTURE.md` and `PROJECT-2-ARCHITECTURE.md`.
+- Requires the repository's .NET 10 foundation and coding conventions.
 
-## Tests esperados
-- `dotnet build` sobre la solución.
-- `dotnet test` para proyectos vacíos o con pruebas de bootstrapping.
-- Verificación de que no haya referencias cruzadas no permitidas.
+## Expected Tests
+- Run `dotnet build` on the solution.
+- Run `dotnet test` for empty projects or projects with bootstrapping tests.
+- Verify that no prohibited cross-project references exist.
 
 ## Definition of Done
-- La estructura del módulo existe y se compila.
-- Las capas quedan separadas según la arquitectura acordada.
-- La API y la infraestructura están listas para recibir casos de uso reales sin introducir lógica de negocio.
-- Los archivos de configuración y referencias están documentados y consistentes con el repositorio.
+- The module structure exists and builds.
+- Layers are separated according to the agreed architecture.
+- The API and Infrastructure are ready to receive real use cases without introducing business logic.
+- Configuration and reference files are documented and consistent with the repository.
 
 ## Tasks / Subtasks
 
@@ -69,9 +69,11 @@ Create only the Project 2 project structure, references, minimal host configurat
 
 ### Completion Notes
 
-Created the four isolated Project 2 projects, registered their Clean Architecture references and added all projects to the solution. The API is a minimal ASP.NET Core host with OpenAPI and a loopback-configured health endpoint. Added xUnit/NSubstitute test projects with project-boundary checks and an offline API smoke test. No persistence, RAG, provider SDK or business logic was added; shared build/package configuration and Project 1 sources remain unchanged.
+Created the four isolated Project 2 projects, registered their Clean Architecture references, and added all projects to the solution. The API is a minimal ASP.NET Core host with OpenAPI and a loopback-configured health endpoint. Added xUnit/NSubstitute test projects with project-boundary checks and an offline API smoke test. No persistence, RAG, provider SDK, or business logic was added; shared build/package configuration and Project 1 sources remain unchanged.
 
 Validation used .NET SDK 10.0.404 installed outside the repository. `dotnet build devops-ai-assistant.sln` passed with zero warnings/errors; `dotnet test devops-ai-assistant.sln` passed all 55 tests. `dotnet format` verification passed for all changed C# files. Full-solution formatter verification still reports 1,910 pre-existing line-ending diagnostics across 9 untouched Project 1 files; no Project 2 files are reported.
+
+Review follow-up strengthened the project-boundary tests to inspect transitive project references and added an integration assertion that the configured API URL binds to loopback. With these changes, `dotnet build devops-ai-assistant.sln` passes with zero warnings/errors, all 57 tests pass, and formatting verification passes for the modified C# tests.
 
 ## File List
 
@@ -98,6 +100,7 @@ Validation used .NET SDK 10.0.404 installed outside the repository. `dotnet buil
 
 - 2026-11-12: Started implementation of P2-01.
 - 2026-11-12: Added the Project 2 solution skeleton and offline architecture/API tests; build and tests pass.
+- 2026-11-12: Strengthened transitive dependency-boundary and loopback configuration tests; translated Project 2 planning artifacts to English.
 
 ## Status
 
