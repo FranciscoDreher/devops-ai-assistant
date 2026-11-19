@@ -4,6 +4,7 @@ using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Application.Documents;
 using DevOpsAI.Rag.Application.Ports;
 using DevOpsAI.Rag.Domain.Documents;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 
 namespace DevOpsAI.Rag.ApplicationTests.Documents;
@@ -227,7 +228,7 @@ public class RunbookDocumentLifecycleTests
         var options = new RunbookDocumentOptions { MaxDocumentSizeBytes = 1_048_576 };
         return new(
             store,
-            new RunbookDocumentValidator(options),
+            new RunbookDocumentValidator(Options.Create(options)),
             new FixedTimeProvider(CurrentTime));
     }
 

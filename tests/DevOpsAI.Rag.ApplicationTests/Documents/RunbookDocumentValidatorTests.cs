@@ -1,6 +1,7 @@
 using System.Text;
 using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Application.Documents;
+using Microsoft.Extensions.Options;
 
 namespace DevOpsAI.Rag.ApplicationTests.Documents;
 
@@ -130,11 +131,12 @@ public class RunbookDocumentValidatorTests
     {
         var options = new RunbookDocumentOptions { MaxDocumentSizeBytes = 0 };
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RunbookDocumentValidator(options));
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => new RunbookDocumentValidator(Options.Create(options)));
     }
 
     private static RunbookDocumentValidator CreateValidator(long maxDocumentSizeBytes = 1_048_576)
     {
-        return new(new RunbookDocumentOptions { MaxDocumentSizeBytes = maxDocumentSizeBytes });
+        return new(Options.Create(new RunbookDocumentOptions { MaxDocumentSizeBytes = maxDocumentSizeBytes }));
     }
 }

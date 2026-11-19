@@ -1,6 +1,7 @@
 using System.Text;
 using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Domain.Documents;
+using Microsoft.Extensions.Options;
 
 namespace DevOpsAI.Rag.Application.Documents;
 
@@ -12,18 +13,18 @@ public sealed class RunbookDocumentValidator
 
     private readonly long _maxDocumentSizeBytes;
 
-    public RunbookDocumentValidator(RunbookDocumentOptions options)
+    public RunbookDocumentValidator(IOptions<RunbookDocumentOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        if (options.MaxDocumentSizeBytes <= 0)
+        if (options.Value.MaxDocumentSizeBytes <= 0)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(options),
                 "The maximum document size must be greater than zero.");
         }
 
-        _maxDocumentSizeBytes = options.MaxDocumentSizeBytes;
+        _maxDocumentSizeBytes = options.Value.MaxDocumentSizeBytes;
     }
 
     public ValidatedRunbookDocument Validate(

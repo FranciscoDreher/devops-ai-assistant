@@ -1,6 +1,12 @@
+using DevOpsAI.Rag.Application.Configuration;
+using DevOpsAI.Rag.Application.Documents;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.Configure<RunbookDocumentOptions>(
+    builder.Configuration.GetSection(RunbookDocumentOptions.SectionName));
+builder.Services.AddSingleton<RunbookDocumentValidator>();
 
 var app = builder.Build();
 

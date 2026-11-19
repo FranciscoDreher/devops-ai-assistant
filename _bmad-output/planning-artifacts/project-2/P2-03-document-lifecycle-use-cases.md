@@ -75,9 +75,12 @@ Extended the Application document-store contract to list metadata without loadin
 
 Offline Application tests cover validation boundaries, replacement/deletion states, tombstones, not-found behavior, store failures, metadata-only listing, and port signatures. `dotnet build --no-restore` passed with 0 warnings/errors; `dotnet test --no-build --no-restore` passed all 110 solution tests; changed C# files passed scoped `dotnet format --verify-no-changes --no-restore`; Clean Architecture boundary tests passed in the full suite. Repository-wide `dotnet format --verify-no-changes --no-restore` was also run but reports pre-existing line-ending violations in untouched files; changed C# files were formatted and the scoped verification passes.
 
+Review follow-ups: the API now binds `RunbookDocumentOptions` from the `RunbookDocuments` configuration section and injects the validator through `IOptions<T>`. An API integration test verifies that overriding the configured byte limit affects validation. The architecture backlog update is included in this File List. Follow-up validation passed: `dotnet build devops-ai-assistant.sln --no-restore` completed with 0 warnings and 0 errors; `dotnet test devops-ai-assistant.sln --no-build --no-restore` passed all 111 tests; scoped `dotnet format --verify-no-changes --no-restore` passed for changed C# files.
+
 ## File List
 
 - `src/DevOpsAI.Rag.Application/Configuration/RunbookDocumentOptions.cs`
+- `src/DevOpsAI.Rag.Application/DevOpsAI.Rag.Application.csproj`
 - `src/DevOpsAI.Rag.Application/Documents/DeleteRunbookDocument.cs`
 - `src/DevOpsAI.Rag.Application/Documents/DeleteRunbookDocumentRequest.cs`
 - `src/DevOpsAI.Rag.Application/Documents/ListRunbookDocuments.cs`
@@ -96,12 +99,18 @@ Offline Application tests cover validation boundaries, replacement/deletion stat
 - `tests/DevOpsAI.Rag.ApplicationTests/Documents/RunbookDocumentLifecycleTests.cs`
 - `tests/DevOpsAI.Rag.ApplicationTests/Documents/RunbookDocumentValidatorTests.cs`
 - `tests/DevOpsAI.Rag.ApplicationTests/RunbookDocumentStoreContractTests.cs`
+- `src/DevOpsAI.Rag.Api/Program.cs`
+- `src/DevOpsAI.Rag.Api/appsettings.json`
+- `tests/DevOpsAI.Rag.IntegrationTests/RagApiSmokeTests.cs`
+- `PROJECT-2-ARCHITECTURE.md`
 - `_bmad-output/planning-artifacts/project-2/P2-03-document-lifecycle-use-cases.md`
 
 ## Change Log
 
 - 2026-11-19: Reconciled the P2-03 implementation scope and recorded validation-policy decisions before implementation.
 - 2026-11-19: Implemented deterministic document validation and lifecycle use cases with offline tests; full build/test and scoped formatting passed.
+- 2026-11-19: Addressed review suggestions by binding document-size options through `IOptions<T>`, added API configuration coverage, and reconciled the story File List.
+- 2026-11-19: Verified the follow-up with the .NET 10 SDK: solution build succeeded with no warnings/errors, all 111 tests passed, and scoped format verification passed.
 
 ## Status
 

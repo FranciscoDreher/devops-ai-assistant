@@ -1,4 +1,6 @@
 using System.Net;
+using DevOpsAI.Rag.Application.Configuration;
+using DevOpsAI.Rag.Application.Documents;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,5 +34,22 @@ public class RagApiSmokeTests : IClassFixture<WebApplicationFactory<Program>>
         var configuration = _factory.Services.GetRequiredService<IConfiguration>();
 
         Assert.Equal("http://127.0.0.1:5082", configuration["Urls"]);
+    }
+
+    [Fact]
+    public void RunbookDocumentValidatorUsesConfiguredMaximumFileSize()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, configuration) =>
+                configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    [$"{RunbookDocumentOptions.SectionName}:MaxDocumentSizeBytes"] = "4"
+                })));
+        var validator = factory.Services.GetRequiredService<RunbookDocumentValidator>();
+
+        var exception = Assert.Throws<RunbookDocumentValidationException>(
+            () => validator.Validate("runbook", "runbook.md", new byte[5]));
+
+        Assert.Equal(RunbookDocumentValidationErrorCode.DocumentTooLarge, exception.ErrorCode);
     }
 }
