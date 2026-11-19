@@ -335,26 +335,23 @@ Execute in order; each task is independently reviewable and verifiable.
 
 1. **P2-01 — Create the RAG solution skeleton.** Add four `DevOpsAI.Rag.*` projects and three test projects to the solution; configure references and analyzers. **Acceptance:** build succeeds; dependency graph tests prevent Domain→Infrastructure and Project 2→Project 1 references; existing Project 1 build/tests pass without code changes.
 2. **P2-02 — Define document and chat contracts.** Add Domain concepts and Application contracts/ports. **Acceptance:** validation tests cover invalid values; Application does not reference ASP.NET Core, EF Core or provider SDKs.
+3. **P2-03 — Define Application document lifecycle use cases.** Define replacement, deletion and listing contracts, normalized results/statuses, deterministic validation policies, and Application-owned persistence/retrieval port usage. **Acceptance:** validation runs before persistence or indexing; replacement and deletion contracts require consistent active results without stale chunks or vectors; offline tests cover ID, extension, size, UTF-8/content validation, errors, lifecycle results and the Application/Infrastructure contract.
 
 ### Epic 2 — Build the Local Index
 
-3. **P2-03 — Implement the Markdown/TXT parser and chunker.** Preserve UTF-8, headings and lines. **Acceptance:** fixtures produce reproducible chunks and offsets; empty/malformed/unsupported files fail without side effects.
-4. **P2-04 — Add local Ollama embeddings and model configuration.** Resolve `Microsoft.Extensions.AI` compatibility in an isolated task. **Acceptance:** timeout, cancellation and missing configuration produce explicit errors; routine tests do not require Ollama.
-5. **P2-05 — Implement the SQLite schema and transactional index.** Persist documents, chunks, vectors and model identity. **Acceptance:** temporary database tests cover commit, rollback, deletion and persistence across restart.
-6. **P2-06 — Implement ingestion, replacement, listing and deletion use cases.** Orchestrate parsing, chunking, embedding and indexing. **Acceptance:** if preparation fails, the previous version stays active; upsert changes the version; deletion removes all derived results.
+4. **P2-04 — Implement SQLite persistence and document metadata storage.** Add the persistence context, entities and schema/migrations; implement the Application storage port. **Acceptance:** temporary-database tests verify mapping, atomic writes/deletes, rollback and persistence across restart; deleting a document removes its associated chunks and references.
+5. **P2-05 — Implement deterministic chunking and the indexing pipeline.** Parse Markdown/TXT and generate reproducible chunks with source metadata; integrate with the persistence/indexing ports. **Acceptance:** fixtures verify chunk text and offsets; invalid or unsupported content has no side effects; replacing a document makes old chunks unavailable.
+6. **P2-06 — Define embedding generation and retrieval contracts.** Add embedding and knowledge-index ports and local similarity search with configured threshold and top-k. Resolve `Microsoft.Extensions.AI` compatibility in this story. **Acceptance:** offline tests verify ranking, threshold, top-k and explicit distinction between insufficient evidence and storage/provider errors; routine tests do not require Ollama.
 
 ### Epic 3 — Deliver Grounded Chat
 
-7. **P2-07 — Implement local retrieval and relevance policy.** Rank by cosine, deduplicate and bound top-k/context; calibrate threshold with fixtures. **Acceptance:** expected rankings and abstention for irrelevant questions; retrieval over 10k chunks meets the NFR in the documented environment.
-8. **P2-08 — Add prompts and local structured generation.** Implement the Ollama adapter and JSON with answer + IDs. **Acceptance:** tests cover invalid JSON, empty answer, unknown IDs, timeout and corpus injection without checking exact text.
-9. **P2-09 — Implement question orchestration and citations.** Generate only when evidence is sufficient and map IDs to persisted metadata. **Acceptance:** generator is not called on abstention; all citations exist in retrieval and belong to the active version.
+7. **P2-07 — Implement grounded answer generation and citation validation.** Add generation/prompt ports and deterministic validation of citations against retrieved candidates. **Acceptance:** tests cover supported answers, abstention, and rejection of references to unretrieved sources; provider details remain outside Application.
 
 ### Epic 4 — Expose and Verify the MVP
 
-10. **P2-10 — Add document management endpoints.** Implement PUT, GET and DELETE with OpenAPI/errors. **Acceptance:** integration tests cover `201/200/204/404/400/413/415` and atomic replacement.
-11. **P2-11 — Add chat, health and error handling.** **Acceptance:** integration tests cover answer, abstention, provider failure, serialization and trace ID.
-12. **P2-12 — Create retrieval and grounding evaluation.** Add a synthetic dataset and reproducible report. **Acceptance:** reports Recall@k, MRR, citation validity and abstention without network access; record a baseline before setting thresholds.
-13. **P2-13 — Harden, document and validate end to end.** Safe logs, per-stage metrics, loopback and local setup. **Acceptance:** `dotnet build`, `dotnet test` and `dotnet format --verify-no-changes` pass; local flow runs from a clean checkout; Project 1 remains unchanged and green.
+8. **P2-08 — Add document management API endpoints.** Implement PUT, GET and DELETE with HTTP contracts and error mapping. **Acceptance:** integration tests cover `201/200/204/404/400/413/415`, validation failures and replacement consistency.
+9. **P2-09 — Add the chat query API and insufficient-evidence handling.** Integrate the question use case with retrieval and grounded generation. **Acceptance:** integration tests cover supported answers, abstention, and structured responses with valid citations and no Infrastructure/provider types in transport contracts.
+10. **P2-10 — Add automated validation, evaluation and observability.** Verify lifecycle, query, restart and error flows with offline tests and a synthetic corpus; capture safe operational outcomes. **Acceptance:** tests require no external network or real credentials; evaluation reports retrieval and citation validity; logs and errors omit sensitive content; `dotnet build`, `dotnet test` and `dotnet format --verify-no-changes` pass, with Project 1 unchanged and green.
 
 ## 16. Definition of Done
 

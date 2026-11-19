@@ -51,8 +51,8 @@ public sealed class KnowledgeDocument
         string content,
         DateTimeOffset createdAtUtc)
     {
-        var normalizedId = ValidateId(id);
-        var normalizedFileName = ValidateFileName(fileName);
+        var normalizedId = NormalizeId(id);
+        var normalizedFileName = NormalizeFileName(fileName);
         ValidateContent(content, nameof(content));
         var timestamp = createdAtUtc.ToUniversalTime();
 
@@ -69,7 +69,7 @@ public sealed class KnowledgeDocument
 
     public KnowledgeDocument Replace(string fileName, string content, DateTimeOffset updatedAtUtc)
     {
-        var normalizedFileName = ValidateFileName(fileName);
+        var normalizedFileName = NormalizeFileName(fileName);
         ValidateContent(content, nameof(content));
         var timestamp = updatedAtUtc.ToUniversalTime();
 
@@ -118,7 +118,7 @@ public sealed class KnowledgeDocument
             timestamp);
     }
 
-    private static string ValidateId(string id)
+    public static string NormalizeId(string id)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         var normalized = id.Trim();
@@ -133,7 +133,7 @@ public sealed class KnowledgeDocument
         return normalized;
     }
 
-    private static string ValidateFileName(string fileName)
+    public static string NormalizeFileName(string fileName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
         var normalized = fileName.Trim();
