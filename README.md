@@ -119,3 +119,9 @@ dotnet test devops-ai-assistant.sln
 ```
 
 The integration tests use a fake AI generator; they do not call an LLM or require external network access.
+
+## Project 2 — Runbook Chatbot persistence
+
+The Project 2 API initializes its SQLite schema at startup and stores the database in `runbook-rag.db` under the process working directory by default. Override the location with the `ConnectionStrings__RagDatabase` environment variable, for example `Data Source=C:\local-data\runbook-rag.db`; the parent directory is created when the API starts. Keep this local database out of source control and back it up separately if its corpus must be retained.
+
+The initial SQLite schema is created with EF Core `EnsureCreated`; schema evolution through migrations is deferred until a later story requires it. Document snapshots, chunks, and citation references are replaced or removed transactionally, and the API remains intended for local use only.

@@ -1,14 +1,20 @@
 using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Application.Documents;
+using DevOpsAI.Rag.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+var databaseConnectionString = builder.Configuration.GetConnectionString("RagDatabase")
+    ?? throw new InvalidOperationException("The RagDatabase connection string is required.");
+builder.Services.AddRagInfrastructure(databaseConnectionString);
 builder.Services.Configure<RunbookDocumentOptions>(
     builder.Configuration.GetSection(RunbookDocumentOptions.SectionName));
 builder.Services.AddSingleton<RunbookDocumentValidator>();
 
 var app = builder.Build();
+
+await app.Services.EnsureRagDatabaseCreatedAsync().ConfigureAwait(false);
 
 if (app.Environment.IsDevelopment())
 {

@@ -10,17 +10,26 @@ public class RunbookDocumentStoreContractTests
     public void StorePortUsesDomainDocumentTypes()
     {
         var findMethod = typeof(IRunbookDocumentStore).GetMethod(nameof(IRunbookDocumentStore.FindByIdAsync));
-        var saveMethod = typeof(IRunbookDocumentStore).GetMethod(nameof(IRunbookDocumentStore.SaveAsync));
+        var saveMethod = typeof(IRunbookDocumentStore).GetMethod(
+            nameof(IRunbookDocumentStore.SaveAsync),
+            [typeof(KnowledgeDocument), typeof(CancellationToken)]);
+        var saveWithChunksMethod = typeof(IRunbookDocumentStore).GetMethod(
+            nameof(IRunbookDocumentStore.SaveAsync),
+            [typeof(KnowledgeDocument), typeof(IReadOnlyList<DocumentChunk>), typeof(CancellationToken)]);
         var deleteMethod = typeof(IRunbookDocumentStore).GetMethod(nameof(IRunbookDocumentStore.DeleteAsync));
         var listMethod = typeof(IRunbookDocumentStore).GetMethod(nameof(IRunbookDocumentStore.ListAsync));
 
         Assert.NotNull(findMethod);
         Assert.NotNull(saveMethod);
+        Assert.NotNull(saveWithChunksMethod);
         Assert.NotNull(deleteMethod);
         Assert.NotNull(listMethod);
         Assert.Equal(typeof(Task<KnowledgeDocument?>), findMethod.ReturnType);
         Assert.Equal(typeof(KnowledgeDocument), saveMethod.GetParameters()[0].ParameterType);
         Assert.Equal(typeof(CancellationToken), saveMethod.GetParameters()[1].ParameterType);
+        Assert.Equal(typeof(KnowledgeDocument), saveWithChunksMethod.GetParameters()[0].ParameterType);
+        Assert.Equal(typeof(IReadOnlyList<DocumentChunk>), saveWithChunksMethod.GetParameters()[1].ParameterType);
+        Assert.Equal(typeof(CancellationToken), saveWithChunksMethod.GetParameters()[2].ParameterType);
         Assert.Equal(typeof(KnowledgeDocument), deleteMethod.GetParameters()[0].ParameterType);
         Assert.Equal(typeof(CancellationToken), deleteMethod.GetParameters()[1].ParameterType);
         Assert.Equal(typeof(Task<IReadOnlyList<RunbookDocumentSummary>>), listMethod.ReturnType);

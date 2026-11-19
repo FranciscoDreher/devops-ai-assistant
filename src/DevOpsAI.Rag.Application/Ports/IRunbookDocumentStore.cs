@@ -13,6 +13,14 @@ public interface IRunbookDocumentStore
     /// </summary>
     Task SaveAsync(KnowledgeDocument document, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Persists an active snapshot and its chunks atomically, replacing any previous searchable data.
+    /// </summary>
+    Task SaveAsync(
+        KnowledgeDocument document,
+        IReadOnlyList<DocumentChunk> chunks,
+        CancellationToken cancellationToken);
+
     /// <summary>Persists the tombstone and atomically removes its content and searchable data.</summary>
     Task DeleteAsync(KnowledgeDocument tombstone, CancellationToken cancellationToken);
 
