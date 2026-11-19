@@ -108,6 +108,27 @@ public class RunbookDocumentLifecycleTests
     }
 
     [Fact]
+    public async Task ReplaceAsyncPropagatesSaveFailureAndCancellationToken()
+    {
+        using var cancellationSource = new CancellationTokenSource();
+        var cancellationToken = cancellationSource.Token;
+        var store = Substitute.For<IRunbookDocumentStore>();
+        store.FindByIdAsync("runbook", cancellationToken)
+            .Returns((KnowledgeDocument?)null);
+        store.SaveAsync(Arg.Any<KnowledgeDocument>(), cancellationToken)
+            .Returns<Task>(_ => throw new InvalidOperationException("Storage unavailable."));
+        var useCase = CreateReplaceUseCase(store);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => useCase.ExecuteAsync(
+                CreateReplaceRequest("runbook", "runbook.md", "content"),
+                cancellationToken));
+
+        await store.Received(1)
+            .SaveAsync(Arg.Any<KnowledgeDocument>(), cancellationToken);
+    }
+
+    [Fact]
     public async Task DeleteAsyncForExistingDocumentDeletesTombstone()
     {
         var store = Substitute.For<IRunbookDocumentStore>();
@@ -129,6 +150,32 @@ public class RunbookDocumentLifecycleTests
                 && document.Status == KnowledgeDocumentStatus.Deleted
                 && document.Content == null),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsyncPropagatesDeleteFailureAndCancellationToken()
+    {
+        using var cancellationSource = new CancellationTokenSource();
+        var cancellationToken = cancellationSource.Token;
+        var store = Substitute.For<IRunbookDocumentStore>();
+        var existing = KnowledgeDocument.Create(
+            "runbook",
+            "runbook.md",
+            "Content",
+            CurrentTime.AddDays(-1));
+        store.FindByIdAsync("runbook", cancellationToken)
+            .Returns(existing);
+        store.DeleteAsync(Arg.Any<KnowledgeDocument>(), cancellationToken)
+            .Returns<Task>(_ => throw new InvalidOperationException("Storage unavailable."));
+        var useCase = new DeleteRunbookDocument(store, new FixedTimeProvider(CurrentTime));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => useCase.ExecuteAsync(
+                new DeleteRunbookDocumentRequest("runbook"),
+                cancellationToken));
+
+        await store.Received(1)
+            .DeleteAsync(Arg.Any<KnowledgeDocument>(), cancellationToken);
     }
 
     [Fact]
