@@ -45,3 +45,50 @@ The project requires a deterministic chunker for Markdown/TXT that can split by 
 - Documents are converted into chunks and stored consistently.
 - The local index supports later retrieval without depending on a generation model.
 - The mapping from citations in results to locations in source documents is clear.
+
+## Tasks / Subtasks
+
+- [x] Implement deterministic Markdown/TXT chunking with heading and paragraph boundaries, configurable maximum size, overlap, and source line metadata.
+- [x] Integrate chunk generation into document replacement and persist complete snapshots through the existing atomic document-store port.
+- [x] Register chunking options and pipeline dependencies in the RAG API composition root.
+- [x] Add application tests for deterministic output, text structure, source metadata, overlap, and invalid configuration.
+- [x] Add SQLite pipeline coverage proving replacement removes old chunks and citation references.
+- [x] Run build, tests, analyzers, scoped formatting, and Clean Architecture boundary verification.
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Use the already validated UTF-8 document content as plain text; parse Markdown headings without rendering or executing document content; preserve TXT text as-is. Chunk by section/paragraph with configured maximum size and overlap, then persist the document and its chunks in the same store operation so the existing SQLite transaction replaces stale searchable data atomically.
+
+### Decisions
+
+- Reused `IRunbookDocumentStore.SaveAsync(document, chunks, cancellationToken)` and its existing SQLite transaction/deletion of old chunks and citation rows; no new persistence abstraction or external provider was needed.
+- Added `RunbookChunkingOptions` with the architecture defaults of 1,000 characters maximum and 150 characters overlap. Overlap is applied to size-driven splits; paragraph-boundary splits start cleanly at the next paragraph rather than repeating short fragments.
+- Kept fenced Markdown content as source text and suppressed heading parsing inside fences. TXT files are not interpreted as Markdown.
+- Registered the chunker and replacement use case at the API composition root. The Infrastructure registration and persistence adapter required no changes because the existing port already supports atomic document/chunk replacement.
+
+### Completion Notes
+
+Implemented deterministic chunk IDs derived from document ID, version, and ordinal; chunk metadata includes document/version association, heading, and inclusive source line range. Replacement now creates chunks before saving the active snapshot and forwards cancellation to persistence. Tests cover Markdown and TXT handling, headings, paragraph boundaries, size limits, overlap, line citations, heading-only Markdown, configuration validation, and replacement cleanup of old chunks/citations.
+
+Validation: `dotnet build devops-ai-assistant.sln --no-restore` succeeded with 0 warnings/errors; `dotnet test devops-ai-assistant.sln --no-build --no-restore` passed all 128 tests. `dotnet format` verification passed for all changed C# files. Full-solution formatter verification reports pre-existing line-ending diagnostics in untouched files; none are in the changed RAG files. Architecture boundary tests passed as part of the full suite. No sprint-status file exists; this story file tracks progress.
+
+## File List
+
+- `src/DevOpsAI.Rag.Api/Program.cs`
+- `src/DevOpsAI.Rag.Api/appsettings.json`
+- `src/DevOpsAI.Rag.Application/Configuration/RunbookChunkingOptions.cs`
+- `src/DevOpsAI.Rag.Application/Documents/ReplaceRunbookDocument.cs`
+- `src/DevOpsAI.Rag.Application/Documents/RunbookDocumentChunker.cs`
+- `tests/DevOpsAI.Rag.ApplicationTests/Documents/RunbookDocumentChunkerTests.cs`
+- `tests/DevOpsAI.Rag.ApplicationTests/Documents/RunbookDocumentLifecycleTests.cs`
+- `tests/DevOpsAI.Rag.IntegrationTests/Persistence/SqliteRunbookDocumentStoreTests.cs`
+- `_bmad-output/planning-artifacts/project-2/P2-05-chunking-indexing-pipeline.md`
+
+### Change Log
+
+- 2026-11-19: Implemented deterministic document chunking and atomic SQLite indexing integration; added offline unit and integration coverage.
+
+## Status
+review

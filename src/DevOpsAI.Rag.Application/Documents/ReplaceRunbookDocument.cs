@@ -8,19 +8,23 @@ public sealed class ReplaceRunbookDocument
     private readonly IRunbookDocumentStore _documentStore;
     private readonly RunbookDocumentValidator _validator;
     private readonly TimeProvider _timeProvider;
+    private readonly RunbookDocumentChunker _chunker;
 
     public ReplaceRunbookDocument(
         IRunbookDocumentStore documentStore,
         RunbookDocumentValidator validator,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        RunbookDocumentChunker chunker)
     {
         ArgumentNullException.ThrowIfNull(documentStore);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(chunker);
 
         _documentStore = documentStore;
         _validator = validator;
         _timeProvider = timeProvider;
+        _chunker = chunker;
     }
 
     public async Task<RunbookDocumentResult> ExecuteAsync(
@@ -70,7 +74,8 @@ public sealed class ReplaceRunbookDocument
             status = RunbookDocumentOperationStatus.Replaced;
         }
 
-        await _documentStore.SaveAsync(document, cancellationToken).ConfigureAwait(false);
+        var chunks = _chunker.Chunk(document);
+        await _documentStore.SaveAsync(document, chunks, cancellationToken).ConfigureAwait(false);
 
         return RunbookDocumentResult.FromDocument(status, RunbookDocumentSummary.From(document));
     }

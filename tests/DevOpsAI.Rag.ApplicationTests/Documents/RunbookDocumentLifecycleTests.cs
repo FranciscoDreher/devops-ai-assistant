@@ -37,6 +37,11 @@ public class RunbookDocumentLifecycleTests
                 && document.FileName == "cache.md"
                 && document.Content == "Restart cache"
                 && document.Version == 1),
+            Arg.Is<IReadOnlyList<DocumentChunk>>(chunks =>
+                chunks.Count == 1
+                && chunks[0].Text == "Restart cache"
+                && chunks[0].StartLine == 1
+                && chunks[0].EndLine == 1),
             Arg.Any<CancellationToken>());
     }
 
@@ -67,6 +72,10 @@ public class RunbookDocumentLifecycleTests
                 document.Version == 2
                 && document.Content == "New content"
                 && document.Status == KnowledgeDocumentStatus.Active),
+            Arg.Is<IReadOnlyList<DocumentChunk>>(chunks =>
+                chunks.Count == 1
+                && chunks[0].Document.Version == 2
+                && chunks[0].Text == "New content"),
             Arg.Any<CancellationToken>());
     }
 
@@ -88,6 +97,11 @@ public class RunbookDocumentLifecycleTests
             .FindByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
         await store.DidNotReceive()
             .SaveAsync(Arg.Any<KnowledgeDocument>(), Arg.Any<CancellationToken>());
+        await store.DidNotReceive()
+            .SaveAsync(
+                Arg.Any<KnowledgeDocument>(),
+                Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -105,6 +119,11 @@ public class RunbookDocumentLifecycleTests
 
         await store.DidNotReceive()
             .SaveAsync(Arg.Any<KnowledgeDocument>(), Arg.Any<CancellationToken>());
+        await store.DidNotReceive()
+            .SaveAsync(
+                Arg.Any<KnowledgeDocument>(),
+                Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -115,7 +134,10 @@ public class RunbookDocumentLifecycleTests
         var store = Substitute.For<IRunbookDocumentStore>();
         store.FindByIdAsync("runbook", cancellationToken)
             .Returns((KnowledgeDocument?)null);
-        store.SaveAsync(Arg.Any<KnowledgeDocument>(), cancellationToken)
+        store.SaveAsync(
+                Arg.Any<KnowledgeDocument>(),
+                Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                cancellationToken)
             .Returns<Task>(_ => throw new InvalidOperationException("Storage unavailable."));
         var useCase = CreateReplaceUseCase(store);
 
@@ -125,7 +147,10 @@ public class RunbookDocumentLifecycleTests
                 cancellationToken));
 
         await store.Received(1)
-            .SaveAsync(Arg.Any<KnowledgeDocument>(), cancellationToken);
+            .SaveAsync(
+                Arg.Any<KnowledgeDocument>(),
+                Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                cancellationToken);
     }
 
     [Fact]
@@ -276,7 +301,8 @@ public class RunbookDocumentLifecycleTests
         return new(
             store,
             new RunbookDocumentValidator(Options.Create(options)),
-            new FixedTimeProvider(CurrentTime));
+            new FixedTimeProvider(CurrentTime),
+            new RunbookDocumentChunker(Options.Create(new RunbookChunkingOptions())));
     }
 
     private static ReplaceRunbookDocumentRequest CreateReplaceRequest(string id, string fileName, string content)

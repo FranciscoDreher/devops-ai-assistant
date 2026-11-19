@@ -1,8 +1,12 @@
+using System.Text;
+using DevOpsAI.Rag.Application.Configuration;
+using DevOpsAI.Rag.Application.Documents;
 using DevOpsAI.Rag.Domain.Documents;
 using DevOpsAI.Rag.Infrastructure.Persistence;
 using DevOpsAI.Rag.Infrastructure.Persistence.Entities;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DevOpsAI.Rag.IntegrationTests.Persistence;
 
@@ -247,6 +251,71 @@ public sealed class SqliteRunbookDocumentStoreTests
         Assert.Empty(await context.Documents.ToListAsync());
     }
 
+    [Fact]
+    public async Task ReplaceRunbookDocumentPersistsNewChunksAndRemovesPreviousCitations()
+    {
+        await using var database = await TemporaryDatabase.CreateAsync();
+        var firstRequest = CreateReplaceRequest("cache-runbook", "cache.md", "## Old\nOld instructions.");
+
+        await using (var context = database.CreateContext())
+        {
+            var useCase = CreateReplaceUseCase(context, TestTime);
+            var result = await useCase.ExecuteAsync(firstRequest, CancellationToken.None);
+
+            Assert.Equal(RunbookDocumentOperationStatus.Created, result.Status);
+        }
+
+        var replacementRequest = CreateReplaceRequest(
+            "cache-runbook",
+            "cache.md",
+            "## Recovery\nRestart the cache safely.");
+        await using (var context = database.CreateContext())
+        {
+            var useCase = CreateReplaceUseCase(context, TestTime.AddMinutes(1));
+            var result = await useCase.ExecuteAsync(replacementRequest, CancellationToken.None);
+
+            Assert.Equal(RunbookDocumentOperationStatus.Replaced, result.Status);
+            Assert.Equal(2, result.Document?.Version);
+        }
+
+        await using (var context = database.CreateContext())
+        {
+            var persistedDocument = await new SqliteRunbookDocumentStore(context)
+                .FindByIdAsync("cache-runbook", CancellationToken.None);
+            var persistedChunk = Assert.Single(await context.Chunks
+                .Include(chunk => chunk.CitationReference)
+                .ToListAsync());
+
+            Assert.NotNull(persistedDocument);
+            Assert.Equal(2, persistedDocument.Version);
+            Assert.Equal("Restart the cache safely.", persistedChunk.Text);
+            Assert.Equal(2, persistedChunk.DocumentVersion);
+            Assert.Equal("Recovery", persistedChunk.Heading);
+            Assert.Equal(2, persistedChunk.StartLine);
+            Assert.Equal(2, persistedChunk.EndLine);
+            Assert.NotNull(persistedChunk.CitationReference);
+            Assert.Equal(persistedChunk.Id, persistedChunk.CitationReference.ChunkId);
+            Assert.Equal(2, persistedChunk.CitationReference.DocumentVersion);
+            Assert.Empty(await context.CitationReferences
+                .Where(reference => reference.DocumentVersion == 1)
+                .ToListAsync());
+        }
+    }
+
+    private static ReplaceRunbookDocument CreateReplaceUseCase(RagDbContext context, DateTimeOffset now)
+    {
+        return new ReplaceRunbookDocument(
+            new SqliteRunbookDocumentStore(context),
+            new RunbookDocumentValidator(Options.Create(new RunbookDocumentOptions())),
+            new FixedTimeProvider(now),
+            new RunbookDocumentChunker(Options.Create(new RunbookChunkingOptions())));
+    }
+
+    private static ReplaceRunbookDocumentRequest CreateReplaceRequest(string id, string fileName, string content)
+    {
+        return new(id, fileName, Encoding.UTF8.GetBytes(content));
+    }
+
     private static KnowledgeDocument CreateDocument()
     {
         return KnowledgeDocument.Create(
@@ -267,6 +336,14 @@ public sealed class SqliteRunbookDocumentStoreTests
     }
 
     private static readonly DateTimeOffset TestTime = new(2026, 11, 19, 12, 0, 0, TimeSpan.Zero);
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow()
+        {
+            return utcNow;
+        }
+    }
 
     private sealed class TemporaryDatabase : IAsyncDisposable
     {

@@ -10,7 +10,12 @@ var databaseConnectionString = builder.Configuration.GetConnectionString("RagDat
 builder.Services.AddRagInfrastructure(databaseConnectionString);
 builder.Services.Configure<RunbookDocumentOptions>(
     builder.Configuration.GetSection(RunbookDocumentOptions.SectionName));
+builder.Services.Configure<RunbookChunkingOptions>(
+    builder.Configuration.GetSection(RunbookChunkingOptions.SectionName));
 builder.Services.AddSingleton<RunbookDocumentValidator>();
+builder.Services.AddSingleton<RunbookDocumentChunker>();
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+builder.Services.AddScoped<ReplaceRunbookDocument>();
 
 var app = builder.Build();
 
