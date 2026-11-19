@@ -76,6 +76,20 @@ public sealed class RunbookDocumentChunker
                 continue;
             }
 
+            if (markdown
+                && sectionLines.Count > 0
+                && !string.IsNullOrWhiteSpace(sectionLines[^1].Text)
+                && TryGetSetextHeading(line))
+            {
+                var headingLine = sectionLines[^1];
+                sectionLines.RemoveAt(sectionLines.Count - 1);
+                AddSectionChunks(document, heading, headingLineNumber, sectionLines, chunks);
+                sectionLines.Clear();
+                heading = headingLine.Text.Trim();
+                headingLineNumber = headingLine.Number;
+                continue;
+            }
+
             if (markdown && TryGetHeading(line, out var nextHeading))
             {
                 AddSectionChunks(document, heading, headingLineNumber, sectionLines, chunks);
@@ -118,15 +132,7 @@ public sealed class RunbookDocumentChunker
         {
             if (!string.IsNullOrWhiteSpace(heading) && headingLineNumber is int sourceLine)
             {
-                var ordinal = chunks.Count;
-                chunks.Add(new DocumentChunk(
-                    $"{document.Id}:v{document.Version}:chunk:{ordinal}",
-                    document,
-                    ordinal,
-                    heading,
-                    heading,
-                    sourceLine,
-                    sourceLine));
+                AddHeadingChunks(document, heading, sourceLine, chunks);
             }
 
             return;
@@ -168,13 +174,13 @@ public sealed class RunbookDocumentChunker
 
                 var nextStart = sectionText.AsSpan(end).StartsWith("\n\n", StringComparison.Ordinal)
                     ? end
-                    : chunkStart + chunkText.Length - _overlapCharacters;
+                    : GetOverlapStart(sectionText, start, end, chunkStart, chunkText);
                 while (nextStart < sectionText.Length && char.IsWhiteSpace(sectionText[nextStart]))
                 {
                     nextStart++;
                 }
 
-                start = Math.Max(start + 1, nextStart);
+                start = nextStart > start ? nextStart : end;
             }
             else
             {
@@ -188,9 +194,66 @@ public sealed class RunbookDocumentChunker
         }
     }
 
+    private void AddHeadingChunks(
+        KnowledgeDocument document,
+        string heading,
+        int sourceLine,
+        List<DocumentChunk> chunks)
+    {
+        var start = 0;
+        while (start < heading.Length)
+        {
+            var end = GetChunkEnd(heading, start);
+            var rawChunkText = heading[start..end];
+            var leadingWhitespace = rawChunkText.Length - rawChunkText.TrimStart().Length;
+            var chunkText = rawChunkText.Trim();
+            if (chunkText.Length > 0)
+            {
+                var chunkStart = start + leadingWhitespace;
+                var ordinal = chunks.Count;
+                chunks.Add(new DocumentChunk(
+                    $"{document.Id}:v{document.Version}:chunk:{ordinal}",
+                    document,
+                    ordinal,
+                    chunkText,
+                    heading,
+                    sourceLine,
+                    sourceLine));
+
+                if (end == heading.Length)
+                {
+                    break;
+                }
+
+                var nextStart = GetOverlapStart(heading, start, end, chunkStart, chunkText);
+                start = nextStart > start ? nextStart : end;
+            }
+            else
+            {
+                start = end;
+            }
+        }
+    }
+
     private int GetChunkEnd(string text, int start)
     {
         var limit = Math.Min(start + _maximumChunkCharacters, text.Length);
+        if (limit < text.Length
+            && limit > start
+            && char.IsHighSurrogate(text[limit - 1])
+            && char.IsLowSurrogate(text[limit]))
+        {
+            limit--;
+        }
+
+        if (limit == start
+            && start + 1 < text.Length
+            && char.IsHighSurrogate(text[start])
+            && char.IsLowSurrogate(text[start + 1]))
+        {
+            return start + 2;
+        }
+
         if (limit == text.Length)
         {
             return limit;
@@ -211,6 +274,25 @@ public sealed class RunbookDocumentChunker
         }
 
         return limit;
+    }
+
+    private int GetOverlapStart(string text, int start, int end, int chunkStart, string chunkText)
+    {
+        var nextStart = chunkStart + chunkText.Length - _overlapCharacters;
+        while (nextStart < text.Length && char.IsWhiteSpace(text[nextStart]))
+        {
+            nextStart++;
+        }
+
+        if (nextStart > 0
+            && nextStart < text.Length
+            && char.IsLowSurrogate(text[nextStart])
+            && char.IsHighSurrogate(text[nextStart - 1]))
+        {
+            nextStart--;
+        }
+
+        return nextStart > start ? nextStart : end;
     }
 
     private static int[] GetLineStarts(IReadOnlyList<SourceLine> lines)
@@ -279,6 +361,23 @@ public sealed class RunbookDocumentChunker
 
         heading = headingText[..closingMarker].Trim();
         return true;
+    }
+
+    private static bool TryGetSetextHeading(string line)
+    {
+        var indentation = line.Length - line.TrimStart(' ').Length;
+        if (indentation > 3)
+        {
+            return false;
+        }
+
+        var markerLine = line[indentation..].TrimEnd(' ');
+        if (markerLine.Length == 0 || markerLine[0] is not ('=' or '-'))
+        {
+            return false;
+        }
+
+        return markerLine.All(character => character == markerLine[0]);
     }
 
     private static bool TryGetCodeFence(string line, out char fenceCharacter, out int fenceLength)

@@ -57,6 +57,33 @@ public sealed class RunbookDocumentChunkerTests
     }
 
     [Fact]
+    public void ChunkRecognizesSetextHeadingsAndRetainsSourceLocations()
+    {
+        var document = CreateDocument(
+            "Recovery\n========\nRestart the cache.\n\nVerification\n------------\nCheck service health.");
+        var chunker = CreateChunker(maximumChunkCharacters: 100, overlapCharacters: 10);
+
+        var chunks = chunker.Chunk(document);
+
+        Assert.Collection(
+            chunks,
+            recovery =>
+            {
+                Assert.Equal("Recovery", recovery.Heading);
+                Assert.Equal("Restart the cache.", recovery.Text);
+                Assert.Equal(3, recovery.StartLine);
+                Assert.Equal(3, recovery.EndLine);
+            },
+            verification =>
+            {
+                Assert.Equal("Verification", verification.Heading);
+                Assert.Equal("Check service health.", verification.Text);
+                Assert.Equal(7, verification.StartLine);
+                Assert.Equal(7, verification.EndLine);
+            });
+    }
+
+    [Fact]
     public void ChunkPrefersParagraphBoundariesWhenSplittingSections()
     {
         var document = CreateDocument("First paragraph.\n\nSecond paragraph.");
@@ -128,6 +155,39 @@ public sealed class RunbookDocumentChunkerTests
         Assert.Equal("Recovery", chunk.Heading);
         Assert.Equal(1, chunk.StartLine);
         Assert.Equal(1, chunk.EndLine);
+    }
+
+    [Fact]
+    public void ChunkSplitsHeadingOnlyDocumentsAtTheConfiguredMaximum()
+    {
+        const string heading = "abcdefghijklmnopqrst";
+        var document = CreateDocument($"# {heading}");
+        var chunker = CreateChunker(maximumChunkCharacters: 8, overlapCharacters: 0);
+
+        var chunks = chunker.Chunk(document);
+
+        Assert.True(chunks.Count > 1);
+        Assert.All(chunks, chunk => Assert.InRange(chunk.Text.Length, 1, 8));
+        Assert.All(chunks, chunk => Assert.Equal(heading, chunk.Heading));
+        Assert.All(chunks, chunk => Assert.Equal((1, 1), (chunk.StartLine, chunk.EndLine)));
+        Assert.Equal(heading, string.Concat(chunks.Select(chunk => chunk.Text)));
+    }
+
+    [Fact]
+    public void ChunkDoesNotSplitUnicodeSurrogatePairsAtChunkBoundaries()
+    {
+        const string content = "abcd😀efghijkl";
+        var document = CreateDocument(content, "runbook.txt");
+        var chunker = CreateChunker(maximumChunkCharacters: 5, overlapCharacters: 0);
+
+        var chunks = chunker.Chunk(document);
+
+        Assert.True(chunks.Count > 1);
+        Assert.All(chunks, chunk => Assert.InRange(chunk.Text.Length, 1, 5));
+        Assert.All(
+            chunks,
+            chunk => Assert.Equal(chunk.Text, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(chunk.Text))));
+        Assert.Equal(content, string.Concat(chunks.Select(chunk => chunk.Text)));
     }
 
     [Fact]

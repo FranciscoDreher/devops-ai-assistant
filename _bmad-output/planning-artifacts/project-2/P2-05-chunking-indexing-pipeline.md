@@ -74,6 +74,12 @@ Implemented deterministic chunk IDs derived from document ID, version, and ordin
 
 Validation: `dotnet build devops-ai-assistant.sln --no-restore` succeeded with 0 warnings/errors; `dotnet test devops-ai-assistant.sln --no-build --no-restore` passed all 128 tests. `dotnet format` verification passed for all changed C# files. Full-solution formatter verification reports pre-existing line-ending diagnostics in untouched files; none are in the changed RAG files. Architecture boundary tests passed as part of the full suite. No sprint-status file exists; this story file tracks progress.
 
+### Review Follow-up
+
+Addressed review findings in the chunker: Markdown Setext headings now retain heading and source metadata, heading-only chunks respect the configured size, and chunk boundaries preserve UTF-16 surrogate pairs. Added focused application tests for all three cases.
+
+Post-fix validation was attempted with the installed SDK, but build and tests are blocked because the repository targets `net10.0` and only .NET 6/9 SDKs are installed. Scoped `dotnet format --verify-no-changes` could not load project references for the same environment limitation. `git diff --check` passes.
+
 ## File List
 
 - `src/DevOpsAI.Rag.Api/Program.cs`
@@ -89,6 +95,7 @@ Validation: `dotnet build devops-ai-assistant.sln --no-restore` succeeded with 0
 ### Change Log
 
 - 2026-11-19: Implemented deterministic document chunking and atomic SQLite indexing integration; added offline unit and integration coverage.
+- 2026-11-19: Fixed chunking review findings and added regression tests; post-fix build/test verification awaits a .NET 10 SDK.
 
 ## Status
 review
