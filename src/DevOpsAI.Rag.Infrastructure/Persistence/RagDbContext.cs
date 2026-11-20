@@ -11,6 +11,8 @@ public sealed class RagDbContext(DbContextOptions<RagDbContext> options) : DbCon
 
     public DbSet<RunbookCitationReferenceEntity> CitationReferences => Set<RunbookCitationReferenceEntity>();
 
+    public DbSet<RunbookChunkEmbeddingEntity> ChunkEmbeddings => Set<RunbookChunkEmbeddingEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<RunbookDocumentEntity>(entity =>
@@ -49,6 +51,20 @@ public sealed class RagDbContext(DbContextOptions<RagDbContext> options) : DbCon
                 .WithOne(reference => reference.Chunk)
                 .HasForeignKey<RunbookCitationReferenceEntity>(reference => reference.ChunkId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(chunk => chunk.Embedding)
+                .WithOne(embedding => embedding.Chunk)
+                .HasForeignKey<RunbookChunkEmbeddingEntity>(embedding => embedding.ChunkId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RunbookChunkEmbeddingEntity>(entity =>
+        {
+            entity.ToTable("ChunkEmbeddings");
+            entity.HasKey(embedding => embedding.ChunkId);
+            entity.Property(embedding => embedding.ChunkId).ValueGeneratedNever();
+            entity.Property(embedding => embedding.ModelId).IsRequired();
+            entity.Property(embedding => embedding.Dimensions).IsRequired();
+            entity.Property(embedding => embedding.VectorBlob).IsRequired();
         });
 
         modelBuilder.Entity<RunbookCitationReferenceEntity>(entity =>

@@ -1,0 +1,17 @@
+[
+  {
+    "question": "How do I restore the cache service?",
+    "queryEmbedding": [1.0, 0.0],
+    "relevantChunkIds": ["cache-recovery"]
+  },
+  {
+    "question": "How do I roll back a deployment?",
+    "queryEmbedding": [0.0, 1.0],
+    "relevantChunkIds": ["deployment-rollback"]
+  },
+  {
+    "question": "How do I investigate an alert?",
+    "queryEmbedding": [0.6, 0.8],
+    "relevantChunkIds": ["alert-investigation"]
+  }
+]

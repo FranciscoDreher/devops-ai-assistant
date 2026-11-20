@@ -1,6 +1,7 @@
 using System.Text;
 using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Application.Documents;
+using DevOpsAI.Rag.Application.Ports;
 using DevOpsAI.Rag.Domain.Documents;
 using DevOpsAI.Rag.Infrastructure.Persistence;
 using DevOpsAI.Rag.Infrastructure.Persistence.Entities;
@@ -304,11 +305,19 @@ public sealed class SqliteRunbookDocumentStoreTests
 
     private static ReplaceRunbookDocument CreateReplaceUseCase(RagDbContext context, DateTimeOffset now)
     {
+        var documentStore = new SqliteRunbookDocumentStore(context);
+        var knowledgeIndex = new SqliteRunbookKnowledgeIndex(
+            context,
+            documentStore,
+            Options.Create(new RunbookRetrievalOptions()));
+
         return new ReplaceRunbookDocument(
-            new SqliteRunbookDocumentStore(context),
+            documentStore,
+            knowledgeIndex,
             new RunbookDocumentValidator(Options.Create(new RunbookDocumentOptions())),
             new FixedTimeProvider(now),
-            new RunbookDocumentChunker(Options.Create(new RunbookChunkingOptions())));
+            new RunbookDocumentChunker(Options.Create(new RunbookChunkingOptions())),
+            new FixedTextEmbeddingGenerator());
     }
 
     private static ReplaceRunbookDocumentRequest CreateReplaceRequest(string id, string fileName, string content)
@@ -342,6 +351,21 @@ public sealed class SqliteRunbookDocumentStoreTests
         public override DateTimeOffset GetUtcNow()
         {
             return utcNow;
+        }
+    }
+
+    private sealed class FixedTextEmbeddingGenerator : ITextEmbeddingGenerator
+    {
+        private static readonly float[] Embedding = [1f, 0f];
+
+        public string ModelId => "test-embedding-model";
+
+        public Task<ReadOnlyMemory<float>> GenerateEmbeddingAsync(
+            string text,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<ReadOnlyMemory<float>>(Embedding);
         }
     }
 

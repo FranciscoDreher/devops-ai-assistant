@@ -1,10 +1,15 @@
 using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Application.Documents;
 using DevOpsAI.Rag.Infrastructure;
+using DevOpsAI.Rag.Infrastructure.Embeddings;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.Configure<OllamaEmbeddingOptions>(
+    builder.Configuration.GetSection(OllamaEmbeddingOptions.SectionName));
+builder.Services.Configure<RunbookRetrievalOptions>(
+    builder.Configuration.GetSection(RunbookRetrievalOptions.SectionName));
 var databaseConnectionString = builder.Configuration.GetConnectionString("RagDatabase")
     ?? throw new InvalidOperationException("The RagDatabase connection string is required.");
 builder.Services.AddRagInfrastructure(databaseConnectionString);

@@ -125,3 +125,15 @@ The integration tests use a fake AI generator; they do not call an LLM or requir
 The Project 2 API initializes its SQLite schema at startup and stores the database in `runbook-rag.db` under the process working directory by default. Override the location with the `ConnectionStrings__RagDatabase` environment variable, for example `Data Source=C:\local-data\runbook-rag.db`; the parent directory is created when the API starts. Keep this local database out of source control and back it up separately if its corpus must be retained.
 
 The initial SQLite schema is created with EF Core `EnsureCreated`; schema evolution through migrations is deferred until a later story requires it. Document snapshots, chunks, and citation references are replaced or removed transactionally, and the API remains intended for local use only.
+
+## Project 2 — Embeddings and retrieval
+
+The local embedding adapter uses Ollama through `Microsoft.Extensions.AI`. Run Ollama locally and configure an installed embedding model with `Ollama__ModelId`; the endpoint defaults to `http://127.0.0.1:11434` and the request timeout defaults to 60 seconds. No model is assumed or pulled automatically. Keep the model ID stable for an indexed corpus: retrieval rejects model or vector-dimension mismatches rather than comparing incompatible vectors.
+
+`RunbookRetrieval__MinimumRelevanceScore` and `RunbookRetrieval__TopK` configure cosine-similarity filtering and the maximum returned candidates. The current starting values are `0.7` and `5` (top-k is bounded to 1–20); calibrate the threshold against the intended corpus before relying on it. The committed `tests/DevOpsAI.Rag.IntegrationTests/Fixtures/rag-evaluation.json` is a deterministic synthetic evaluation fixture, not a quality baseline for a real embedding model. Run it offline with:
+
+```bash
+dotnet test tests/DevOpsAI.Rag.IntegrationTests/DevOpsAI.Rag.IntegrationTests.csproj --filter FullyQualifiedName~RetrievalEvaluationFixture
+```
+
+The SQLite embedding table is created idempotently at startup, including for databases created by earlier Project 2 stories. Existing chunks without vectors are not treated as valid evidence; their documents must be re-ingested before retrieval. Automated tests use controlled vectors and do not require Ollama or network access.

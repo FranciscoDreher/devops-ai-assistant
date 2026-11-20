@@ -1,8 +1,13 @@
+using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Application.Ports;
+using DevOpsAI.Rag.Infrastructure.Embeddings;
 using DevOpsAI.Rag.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using OllamaSharp;
 
 namespace DevOpsAI.Rag.Infrastructure;
 
@@ -22,6 +27,23 @@ public static class DependencyInjection
 
         services.AddDbContext<RagDbContext>(options => options.UseSqlite(sqliteConnectionString));
         services.AddScoped<IRunbookDocumentStore, SqliteRunbookDocumentStore>();
+        services.AddScoped<IRunbookKnowledgeIndex, SqliteRunbookKnowledgeIndex>();
+        services.AddSingleton<HttpClient>(serviceProvider =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<OllamaEmbeddingOptions>>().Value;
+            options.Validate();
+            return new HttpClient
+            {
+                BaseAddress = new Uri(options.Endpoint),
+                Timeout = options.RequestTimeout
+            };
+        });
+        services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>>(serviceProvider =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<OllamaEmbeddingOptions>>().Value;
+            return new OllamaApiClient(serviceProvider.GetRequiredService<HttpClient>(), options.ModelId);
+        });
+        services.AddSingleton<ITextEmbeddingGenerator, OllamaTextEmbeddingGenerator>();
 
         return services;
     }
@@ -52,6 +74,17 @@ public static class DependencyInjection
             }
 
             await dbContext.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+            await dbContext.Database.ExecuteSqlRawAsync(
+                """
+                CREATE TABLE IF NOT EXISTS "ChunkEmbeddings" (
+                    "ChunkId" TEXT NOT NULL PRIMARY KEY,
+                    "ModelId" TEXT NOT NULL,
+                    "Dimensions" INTEGER NOT NULL CHECK ("Dimensions" > 0),
+                    "VectorBlob" BLOB NOT NULL CHECK (length("VectorBlob") = "Dimensions" * 4),
+                    FOREIGN KEY ("ChunkId") REFERENCES "Chunks" ("Id") ON DELETE CASCADE
+                )
+                """,
+                cancellationToken).ConfigureAwait(false);
         }
     }
 }

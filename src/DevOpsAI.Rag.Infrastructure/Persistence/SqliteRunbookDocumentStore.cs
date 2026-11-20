@@ -31,14 +31,46 @@ public sealed class SqliteRunbookDocumentStore(RagDbContext dbContext) : IRunboo
         IReadOnlyList<DocumentChunk> chunks,
         CancellationToken cancellationToken)
     {
+        await SaveSnapshotAsync(
+            document,
+            chunks,
+            Array.Empty<RunbookChunkEmbedding>(),
+            allowUnembeddedChunks: true,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task SaveAsync(
+        KnowledgeDocument document,
+        IReadOnlyList<DocumentChunk> chunks,
+        IReadOnlyList<RunbookChunkEmbedding> embeddings,
+        CancellationToken cancellationToken)
+    {
+        return SaveSnapshotAsync(
+            document,
+            chunks,
+            embeddings,
+            allowUnembeddedChunks: false,
+            cancellationToken);
+    }
+
+    private async Task SaveSnapshotAsync(
+        KnowledgeDocument document,
+        IReadOnlyList<DocumentChunk> chunks,
+        IReadOnlyList<RunbookChunkEmbedding> embeddings,
+        bool allowUnembeddedChunks,
+        CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(chunks);
+        ArgumentNullException.ThrowIfNull(embeddings);
         EnsureActiveDocument(document);
 
         foreach (var chunk in chunks)
         {
             EnsureChunkBelongsToDocument(chunk, document);
         }
+
+        EnsureEmbeddingsMatchChunks(chunks, embeddings, allowUnembeddedChunks);
 
         var transaction = await dbContext.Database
             .BeginTransactionAsync(cancellationToken)
@@ -67,6 +99,7 @@ public sealed class SqliteRunbookDocumentStore(RagDbContext dbContext) : IRunboo
             }
 
             dbContext.Chunks.AddRange(chunks.Select(ToEntity));
+            dbContext.ChunkEmbeddings.AddRange(embeddings.Select(ToEntity));
             await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -148,6 +181,45 @@ public sealed class SqliteRunbookDocumentStore(RagDbContext dbContext) : IRunboo
         }
     }
 
+    private static void EnsureEmbeddingsMatchChunks(
+        IReadOnlyList<DocumentChunk> chunks,
+        IReadOnlyList<RunbookChunkEmbedding> embeddings,
+        bool allowUnembeddedChunks)
+    {
+        if (allowUnembeddedChunks && embeddings.Count == 0)
+        {
+            return;
+        }
+
+        if (embeddings.Count != chunks.Count)
+        {
+            throw new ArgumentException("Every persisted chunk must have exactly one embedding.", nameof(embeddings));
+        }
+
+        var chunkIds = chunks.Select(chunk => chunk.Id).ToHashSet(StringComparer.Ordinal);
+        var embeddingChunkIds = new HashSet<string>(StringComparer.Ordinal);
+        string? modelId = null;
+        var dimensions = 0;
+
+        foreach (var embedding in embeddings)
+        {
+            ArgumentNullException.ThrowIfNull(embedding);
+
+            if (!chunkIds.Contains(embedding.ChunkId) || !embeddingChunkIds.Add(embedding.ChunkId))
+            {
+                throw new ArgumentException("Embeddings must map one-to-one to the persisted chunks.", nameof(embeddings));
+            }
+
+            modelId ??= embedding.ModelId;
+            dimensions = dimensions == 0 ? embedding.Vector.Length : dimensions;
+            if (!string.Equals(modelId, embedding.ModelId, StringComparison.Ordinal)
+                || dimensions != embedding.Vector.Length)
+            {
+                throw new ArgumentException("All persisted embeddings must use one model and dimension.", nameof(embeddings));
+            }
+        }
+    }
+
     private static void EnsureNextVersion(KnowledgeDocument document, RunbookDocumentEntity existing)
     {
         if (document.Version != checked(existing.Version + 1)
@@ -209,6 +281,17 @@ public sealed class SqliteRunbookDocumentStore(RagDbContext dbContext) : IRunboo
                 StartLine = citation.StartLine,
                 EndLine = citation.EndLine
             }
+        };
+    }
+
+    private static RunbookChunkEmbeddingEntity ToEntity(RunbookChunkEmbedding embedding)
+    {
+        return new RunbookChunkEmbeddingEntity
+        {
+            ChunkId = embedding.ChunkId,
+            ModelId = embedding.ModelId,
+            Dimensions = embedding.Vector.Length,
+            VectorBlob = SqliteEmbeddingVectorConverter.Serialize(embedding.Vector)
         };
     }
 

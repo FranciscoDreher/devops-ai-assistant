@@ -21,4 +21,6 @@ public sealed class RunbookChunkEntity
     public RunbookDocumentEntity Document { get; set; } = null!;
 
     public RunbookCitationReferenceEntity? CitationReference { get; set; }
+
+    public RunbookChunkEmbeddingEntity? Embedding { get; set; }
 }

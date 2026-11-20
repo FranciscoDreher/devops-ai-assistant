@@ -12,6 +12,7 @@ namespace DevOpsAI.Rag.ApplicationTests.Documents;
 public class RunbookDocumentLifecycleTests
 {
     private static readonly DateTimeOffset CurrentTime = new(2026, 11, 19, 12, 0, 0, TimeSpan.Zero);
+    private static readonly float[] TestEmbedding = [1f, 0f];
 
     [Fact]
     public async Task ReplaceAsyncForMissingDocumentSavesCreatedSnapshot()
@@ -42,6 +43,13 @@ public class RunbookDocumentLifecycleTests
                 && chunks[0].Text == "Restart cache"
                 && chunks[0].StartLine == 1
                 && chunks[0].EndLine == 1),
+            Arg.Is<IReadOnlyList<RunbookChunkEmbedding>>(embeddings =>
+                embeddings.Count == 1
+                && embeddings[0].ChunkId == "runbook:v1:chunk:0"
+                && embeddings[0].ModelId == "test-embedding-model"
+                && embeddings[0].Vector.Length == 2
+                && embeddings[0].Vector.ToArray()[0] == 1f
+                && embeddings[0].Vector.ToArray()[1] == 0f),
             Arg.Any<CancellationToken>());
     }
 
@@ -76,6 +84,10 @@ public class RunbookDocumentLifecycleTests
                 chunks.Count == 1
                 && chunks[0].Document.Version == 2
                 && chunks[0].Text == "New content"),
+            Arg.Is<IReadOnlyList<RunbookChunkEmbedding>>(embeddings =>
+                embeddings.Count == 1
+                && embeddings[0].ChunkId == "runbook:v2:chunk:0"
+                && embeddings[0].ModelId == "test-embedding-model"),
             Arg.Any<CancellationToken>());
     }
 
@@ -102,6 +114,12 @@ public class RunbookDocumentLifecycleTests
                 Arg.Any<KnowledgeDocument>(),
                 Arg.Any<IReadOnlyList<DocumentChunk>>(),
                 Arg.Any<CancellationToken>());
+        await store.DidNotReceive()
+            .SaveAsync(
+                Arg.Any<KnowledgeDocument>(),
+                Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                Arg.Any<IReadOnlyList<RunbookChunkEmbedding>>(),
+                Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -124,6 +142,12 @@ public class RunbookDocumentLifecycleTests
                 Arg.Any<KnowledgeDocument>(),
                 Arg.Any<IReadOnlyList<DocumentChunk>>(),
                 Arg.Any<CancellationToken>());
+        await store.DidNotReceive()
+            .SaveAsync(
+                Arg.Any<KnowledgeDocument>(),
+                Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                Arg.Any<IReadOnlyList<RunbookChunkEmbedding>>(),
+                Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -137,6 +161,7 @@ public class RunbookDocumentLifecycleTests
         store.SaveAsync(
                 Arg.Any<KnowledgeDocument>(),
                 Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                Arg.Any<IReadOnlyList<RunbookChunkEmbedding>>(),
                 cancellationToken)
             .Returns<Task>(_ => throw new InvalidOperationException("Storage unavailable."));
         var useCase = CreateReplaceUseCase(store);
@@ -150,7 +175,56 @@ public class RunbookDocumentLifecycleTests
             .SaveAsync(
                 Arg.Any<KnowledgeDocument>(),
                 Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                Arg.Any<IReadOnlyList<RunbookChunkEmbedding>>(),
                 cancellationToken);
+    }
+
+    [Fact]
+    public async Task ReplaceAsyncPropagatesEmbeddingFailureWithoutSavingDocument()
+    {
+        var store = Substitute.For<IRunbookDocumentStore>();
+        store.FindByIdAsync("runbook", Arg.Any<CancellationToken>())
+            .Returns((KnowledgeDocument?)null);
+        var embeddingGenerator = Substitute.For<ITextEmbeddingGenerator>();
+        embeddingGenerator.ModelId.Returns("test-embedding-model");
+        embeddingGenerator.GenerateEmbeddingAsync("Content", Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromException<ReadOnlyMemory<float>>(
+                new InvalidOperationException("Embedding provider unavailable.")));
+        var useCase = CreateReplaceUseCase(store, embeddingGenerator);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => useCase.ExecuteAsync(
+                CreateReplaceRequest("runbook", "runbook.md", "Content"),
+                CancellationToken.None));
+
+        await store.DidNotReceive()
+            .SaveAsync(
+                Arg.Any<KnowledgeDocument>(),
+                Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                Arg.Any<IReadOnlyList<RunbookChunkEmbedding>>(),
+                Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ReplaceAsyncPropagatesCancellationToEmbeddingGeneration()
+    {
+        using var cancellationSource = new CancellationTokenSource();
+        var cancellationToken = cancellationSource.Token;
+        var store = Substitute.For<IRunbookDocumentStore>();
+        store.FindByIdAsync("runbook", cancellationToken)
+            .Returns((KnowledgeDocument?)null);
+        var embeddingGenerator = Substitute.For<ITextEmbeddingGenerator>();
+        embeddingGenerator.ModelId.Returns("test-embedding-model");
+        embeddingGenerator.GenerateEmbeddingAsync("Content", cancellationToken)
+            .Returns(Task.FromResult<ReadOnlyMemory<float>>(TestEmbedding));
+        var useCase = CreateReplaceUseCase(store, embeddingGenerator);
+
+        await useCase.ExecuteAsync(
+            CreateReplaceRequest("runbook", "runbook.md", "Content"),
+            cancellationToken);
+
+        await embeddingGenerator.Received(1)
+            .GenerateEmbeddingAsync("Content", cancellationToken);
     }
 
     [Fact]
@@ -295,14 +369,38 @@ public class RunbookDocumentLifecycleTests
             () => useCase.ExecuteAsync(CancellationToken.None));
     }
 
-    private static ReplaceRunbookDocument CreateReplaceUseCase(IRunbookDocumentStore store)
+    private static ReplaceRunbookDocument CreateReplaceUseCase(
+        IRunbookDocumentStore store,
+        ITextEmbeddingGenerator? embeddingGenerator = null)
     {
         var options = new RunbookDocumentOptions { MaxDocumentSizeBytes = 1_048_576 };
+        var knowledgeIndex = Substitute.For<IRunbookKnowledgeIndex>();
+        knowledgeIndex.IndexAsync(
+                Arg.Any<KnowledgeDocument>(),
+                Arg.Any<IReadOnlyList<DocumentChunk>>(),
+                Arg.Any<IReadOnlyList<RunbookChunkEmbedding>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(call => store.SaveAsync(
+                call.Arg<KnowledgeDocument>(),
+                call.Arg<IReadOnlyList<DocumentChunk>>(),
+                call.Arg<IReadOnlyList<RunbookChunkEmbedding>>(),
+                call.Arg<CancellationToken>()));
+
+        if (embeddingGenerator is null)
+        {
+            embeddingGenerator = Substitute.For<ITextEmbeddingGenerator>();
+            embeddingGenerator.ModelId.Returns("test-embedding-model");
+            embeddingGenerator.GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<ReadOnlyMemory<float>>(TestEmbedding));
+        }
+
         return new(
             store,
+            knowledgeIndex,
             new RunbookDocumentValidator(Options.Create(options)),
             new FixedTimeProvider(CurrentTime),
-            new RunbookDocumentChunker(Options.Create(new RunbookChunkingOptions())));
+            new RunbookDocumentChunker(Options.Create(new RunbookChunkingOptions())),
+            embeddingGenerator);
     }
 
     private static ReplaceRunbookDocumentRequest CreateReplaceRequest(string id, string fileName, string content)
