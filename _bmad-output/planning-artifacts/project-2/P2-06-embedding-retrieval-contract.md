@@ -72,6 +72,16 @@ Define Application-owned embedding and retrieval ports, generate and persist chu
 
 Implemented Application ports and retrieval result/sufficiency contracts; an Ollama embedding adapter; SQLite embedding persistence and cosine ranking with configured threshold/top-k; and atomic embedding generation/indexing during document replacement. Added deterministic tests for provider failures and cancellation, vector validation, ranking, threshold/top-k, source mapping, insufficient evidence, and persistence behavior. Updated local configuration documentation.
 
+The offline evaluation fixture now reports Recall@k and MRR assertions in the integration test. These metrics remain synthetic and are not a production quality baseline.
+
+Post-review validation:
+- Added cancellation propagation coverage for Ollama embedding generation.
+- Added provider coverage for empty vectors, unexpected vector counts, and non-finite values.
+- Added explicit Recall@k and MRR assertions to the offline retrieval fixture test.
+- .NET 10.0.404 installed and solution build passes with 0 warnings and 0 errors.
+- Full solution test suite passes: 155 tests, 0 failures.
+- `git diff --check` passes.
+
 Validation with .NET SDK 10.0.404: solution build succeeded with 0 warnings/errors; all 151 solution tests passed, including Project 2 dependency-boundary tests. `dotnet format` verification passed for all changed C# files. Full-solution formatter verification still reports line-ending diagnostics in pre-existing files outside this change; no diagnostics remain in changed C# files. `git diff --check` passes.
 
 The Definition of Done requiring retrieval to be demonstrated against the real corpus remains unverified: the available evaluation fixture is synthetic and no local Ollama service/corpus was used. The story is therefore left in `review`, not marked complete.

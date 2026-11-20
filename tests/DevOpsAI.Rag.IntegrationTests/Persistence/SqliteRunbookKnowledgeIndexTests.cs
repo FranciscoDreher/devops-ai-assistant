@@ -330,8 +330,11 @@ public sealed class SqliteRunbookKnowledgeIndexTests
             }
         }
 
-        Assert.Equal(1d, relevantHitCount / (double)evaluationCases.Length, 6);
-        Assert.Equal(1d, reciprocalRankTotal / evaluationCases.Length, 6);
+        var recallAtK = relevantHitCount / (double)evaluationCases.Length;
+        var meanReciprocalRank = reciprocalRankTotal / evaluationCases.Length;
+
+        Assert.Equal(1d, recallAtK, 6);
+        Assert.Equal(1d, meanReciprocalRank, 6);
     }
 
     private static SqliteRunbookKnowledgeIndex CreateIndex(

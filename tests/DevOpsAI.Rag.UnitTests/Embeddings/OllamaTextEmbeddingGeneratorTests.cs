@@ -69,6 +69,82 @@ public sealed class OllamaTextEmbeddingGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateEmbeddingAsyncPropagatesCancellationToTheProvider()
+    {
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        var provider = Substitute.For<IEmbeddingGenerator<string, Embedding<float>>>();
+        provider.GenerateAsync(
+                Arg.Any<IEnumerable<string>>(),
+                Arg.Any<EmbeddingGenerationOptions?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromCanceled<GeneratedEmbeddings<Embedding<float>>>(
+                cancellation.Token));
+        var generator = new OllamaTextEmbeddingGenerator(provider, Microsoft.Extensions.Options.Options.Create(Options));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => generator.GenerateEmbeddingAsync("recover cache", cancellation.Token));
+
+        await provider.Received(1).GenerateAsync(
+            Arg.Is<IEnumerable<string>>(inputs => inputs.Single() == "recover cache"),
+            Arg.Any<EmbeddingGenerationOptions?>(),
+            cancellation.Token);
+    }
+
+    [Fact]
+    public async Task GenerateEmbeddingAsyncRejectsAnEmptyProviderVector()
+    {
+        var provider = Substitute.For<IEmbeddingGenerator<string, Embedding<float>>>();
+        provider.GenerateAsync(
+                Arg.Any<IEnumerable<string>>(),
+                Arg.Any<EmbeddingGenerationOptions?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new GeneratedEmbeddings<Embedding<float>>(
+                [new Embedding<float>(Array.Empty<float>())])));
+        var generator = new OllamaTextEmbeddingGenerator(provider, Microsoft.Extensions.Options.Options.Create(Options));
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => generator.GenerateEmbeddingAsync("recover cache", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GenerateEmbeddingAsyncRejectsAnUnexpectedProviderVectorCount()
+    {
+        var provider = Substitute.For<IEmbeddingGenerator<string, Embedding<float>>>();
+        provider.GenerateAsync(
+                Arg.Any<IEnumerable<string>>(),
+                Arg.Any<EmbeddingGenerationOptions?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new GeneratedEmbeddings<Embedding<float>>(
+                [
+                    new Embedding<float>(ValidVector),
+                    new Embedding<float>(ValidVector)
+                ])));
+        var generator = new OllamaTextEmbeddingGenerator(provider, Microsoft.Extensions.Options.Options.Create(Options));
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => generator.GenerateEmbeddingAsync("recover cache", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GenerateEmbeddingAsyncRejectsNonFiniteProviderValues()
+    {
+        float[] nonFiniteVector = [float.NaN, float.PositiveInfinity];
+        var provider = Substitute.For<IEmbeddingGenerator<string, Embedding<float>>>();
+        provider.GenerateAsync(
+                Arg.Any<IEnumerable<string>>(),
+                Arg.Any<EmbeddingGenerationOptions?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new GeneratedEmbeddings<Embedding<float>>(
+                [new Embedding<float>(nonFiniteVector)])));
+        var generator = new OllamaTextEmbeddingGenerator(provider, Microsoft.Extensions.Options.Options.Create(Options));
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => generator.GenerateEmbeddingAsync("recover cache", CancellationToken.None));
+    }
+
+    [Fact]
     public void ConstructorRejectsMissingEmbeddingModelConfiguration()
     {
         var provider = Substitute.For<IEmbeddingGenerator<string, Embedding<float>>>();
