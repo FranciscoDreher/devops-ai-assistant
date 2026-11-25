@@ -132,6 +132,8 @@ The local embedding adapter uses Ollama through `Microsoft.Extensions.AI`. Run O
 
 Grounded answer generation uses the same local Ollama endpoint and timeout. Configure an installed chat model with `Ollama__Chat__ModelId`; the model is required and is not pulled automatically. Generation receives only the question and retrieved passages. The application abstains before generation when retrieval is below its evidence threshold and rejects generated citations that do not exactly match retrieved chunk IDs.
 
+`GET /health` reports process liveness. `GET /ready` returns `503 Service Unavailable` and lists missing model configuration until both `Ollama__ModelId` and `Ollama__Chat__ModelId` are set; it checks configuration, not whether the Ollama server is reachable.
+
 `RunbookRetrieval__MinimumRelevanceScore` and `RunbookRetrieval__TopK` configure cosine-similarity filtering and the maximum returned candidates. The current starting values are `0.7` and `5` (top-k is bounded to 1–20); calibrate the threshold against the intended corpus before relying on it. The committed `tests/DevOpsAI.Rag.IntegrationTests/Fixtures/rag-evaluation.json` is a deterministic synthetic evaluation fixture, not a quality baseline for a real embedding model. Run it offline with:
 
 ```bash

@@ -89,6 +89,26 @@ public sealed class GenerateRunbookAnswerTests
     }
 
     [Fact]
+    public async Task ExecuteAsyncWhenGeneratorCitesChunkWithSurroundingWhitespaceRejectsTheAnswer()
+    {
+        var candidate = CreateCandidate("chunk-recovery", "Restart the cache service.", 0.94);
+        var promptProvider = Substitute.For<IRunbookPromptProvider>();
+        promptProvider.GetPromptAsync(Arg.Any<CancellationToken>())
+            .Returns(new RunbookPromptInstructions("Ground answers.", "Return the required JSON."));
+        var generator = Substitute.For<IRunbookAnswerGenerator>();
+        generator.GenerateAsync(Arg.Any<RunbookAnswerPrompt>(), Arg.Any<CancellationToken>())
+            .Returns(new GeneratedRunbookAnswer(
+                RunbookAnswerStatus.Answered,
+                "Restart the cache service.",
+                [" chunk-recovery "]));
+        var useCase = new GenerateRunbookAnswer(promptProvider, generator);
+        var retrieval = new RunbookRetrievalResult([candidate], RunbookEvidenceSufficiency.Sufficient);
+
+        await Assert.ThrowsAsync<InvalidDataException>(() =>
+            useCase.ExecuteAsync("How do I recover the cache?", retrieval, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task ExecuteAsyncWhenGeneratorAbstainsReturnsInsufficientEvidenceWithoutCitations()
     {
         var candidate = CreateCandidate("chunk-recovery", "Restart the cache service.", 0.94);

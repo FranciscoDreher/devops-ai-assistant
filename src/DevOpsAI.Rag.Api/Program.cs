@@ -4,6 +4,7 @@ using DevOpsAI.Rag.Application.Documents;
 using DevOpsAI.Rag.Infrastructure;
 using DevOpsAI.Rag.Infrastructure.Embeddings;
 using DevOpsAI.Rag.Infrastructure.Generation;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,27 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+app.MapGet(
+    "/ready",
+    (IOptions<OllamaEmbeddingOptions> embeddingOptions, IOptions<OllamaChatOptions> chatOptions) =>
+    {
+        var missingConfiguration = new List<string>();
+        if (string.IsNullOrWhiteSpace(embeddingOptions.Value.ModelId))
+        {
+            missingConfiguration.Add($"{OllamaEmbeddingOptions.SectionName}:ModelId");
+        }
+
+        if (string.IsNullOrWhiteSpace(chatOptions.Value.ModelId))
+        {
+            missingConfiguration.Add($"{OllamaChatOptions.SectionName}:ModelId");
+        }
+
+        return missingConfiguration.Count > 0
+            ? Results.Json(
+                new { status = "not_ready", missingConfiguration },
+                statusCode: StatusCodes.Status503ServiceUnavailable)
+            : Results.Ok(new { status = "ready" });
+    });
 
 app.Run();
 

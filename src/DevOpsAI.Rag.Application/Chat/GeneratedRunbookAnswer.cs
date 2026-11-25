@@ -21,7 +21,7 @@ public sealed record GeneratedRunbookAnswer
             .Select(chunkId =>
             {
                 ArgumentException.ThrowIfNullOrWhiteSpace(chunkId);
-                return chunkId.Trim();
+                return chunkId;
             })
             .ToImmutableArray();
 
