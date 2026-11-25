@@ -68,7 +68,7 @@ Se conectaron los casos de uso existentes de Application con endpoints Minimal A
 
 ### Completion Notes
 
-Implementados `PUT /api/documents/{documentId}`, `GET /api/documents` y `DELETE /api/documents/{documentId}` con contratos OpenAPI y ejemplos `.http`. La creación devuelve 201 con `Location`, el reemplazo 200, el borrado 204 o 404. La validación fallida y los errores de embedding no reemplazan la versión activa.
+Implementados `PUT /api/documents/{documentId}`, `GET /api/documents` y `DELETE /api/documents/{documentId}` con contratos OpenAPI y ejemplos `.http`. La creación devuelve 201 con la representación del documento, sin `Location` porque no existe una ruta de lectura individual; el reemplazo devuelve 200 y el borrado 204 o 404. La validación fallida y los errores de embedding no reemplazan la versión activa.
 
 Verificación final:
 - `dotnet build devops-ai-assistant.sln --no-restore`: correcto, 0 advertencias y 0 errores.

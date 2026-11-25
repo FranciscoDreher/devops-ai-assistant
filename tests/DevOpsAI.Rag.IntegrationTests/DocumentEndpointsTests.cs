@@ -46,7 +46,7 @@ public sealed class DocumentEndpointsTests
         Assert.True(
             createResponse.StatusCode == HttpStatusCode.Created,
             await createResponse.Content.ReadAsStringAsync());
-        Assert.Equal("/api/documents/cache-runbook", createResponse.Headers.Location?.OriginalString);
+        Assert.Null(createResponse.Headers.Location);
 
         using var created = await ReadJsonAsync(createResponse);
         var createdDocument = created.RootElement;

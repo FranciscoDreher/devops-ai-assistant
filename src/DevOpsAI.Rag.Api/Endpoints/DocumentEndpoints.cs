@@ -49,7 +49,7 @@ public static class DocumentEndpoints
     }
 
     private static async Task<Results<
-        Created<DocumentResponse>,
+        JsonHttpResult<DocumentResponse>,
         Ok<DocumentResponse>,
         JsonHttpResult<ApiErrorResponse>>> PutDocumentAsync(
         HttpContext context,
@@ -124,9 +124,9 @@ public static class DocumentEndpoints
         var document = MapDocument(resultDocument);
         return result.Status switch
         {
-            RunbookDocumentOperationStatus.Created => TypedResults.Created(
-                $"/api/documents/{Uri.EscapeDataString(document.DocumentId)}",
-                document),
+            RunbookDocumentOperationStatus.Created => TypedResults.Json(
+                document,
+                statusCode: StatusCodes.Status201Created),
             RunbookDocumentOperationStatus.Replaced => TypedResults.Ok(document),
             _ => throw new InvalidOperationException("The document replacement returned an unsupported result.")
         };
