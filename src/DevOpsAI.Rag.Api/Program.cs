@@ -1,3 +1,5 @@
+using DevOpsAI.Rag.Api;
+using DevOpsAI.Rag.Api.Endpoints;
 using DevOpsAI.Rag.Application.Chat;
 using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Application.Documents;
@@ -9,6 +11,7 @@ using Microsoft.Extensions.Options;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddRagDocumentApi();
 builder.Services.Configure<OllamaEmbeddingOptions>(
     builder.Configuration.GetSection(OllamaEmbeddingOptions.SectionName));
 builder.Services.Configure<OllamaChatOptions>(
@@ -25,10 +28,11 @@ builder.Services.Configure<RunbookChunkingOptions>(
 builder.Services.AddSingleton<RunbookDocumentValidator>();
 builder.Services.AddSingleton<RunbookDocumentChunker>();
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
-builder.Services.AddScoped<ReplaceRunbookDocument>();
 builder.Services.AddScoped<GenerateRunbookAnswer>();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 await app.Services.EnsureRagDatabaseCreatedAsync().ConfigureAwait(false);
 
@@ -59,6 +63,8 @@ app.MapGet(
                 statusCode: StatusCodes.Status503ServiceUnavailable)
             : Results.Ok(new { status = "ready" });
     });
+
+app.MapDocumentEndpoints();
 
 app.Run();
 

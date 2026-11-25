@@ -340,7 +340,10 @@ public class RunbookDocumentLifecycleTests
         var deletedDocument = activeDocument.Delete(CurrentTime.AddMinutes(1));
         store.ListAsync(Arg.Any<CancellationToken>())
             .Returns<IReadOnlyList<RunbookDocumentSummary>>(
-                [RunbookDocumentSummary.From(activeDocument), RunbookDocumentSummary.From(deletedDocument)]);
+                [
+                    RunbookDocumentSummary.From(activeDocument, chunkCount: 0),
+                    RunbookDocumentSummary.From(deletedDocument, chunkCount: 0)
+                ]);
         var useCase = new ListRunbookDocuments(store);
 
         var result = await useCase.ExecuteAsync(CancellationToken.None);

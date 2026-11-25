@@ -94,6 +94,6 @@ public sealed class ReplaceRunbookDocument
 
         await _knowledgeIndex.IndexAsync(document, chunks, embeddings, cancellationToken).ConfigureAwait(false);
 
-        return RunbookDocumentResult.FromDocument(status, RunbookDocumentSummary.From(document));
+        return RunbookDocumentResult.FromDocument(status, RunbookDocumentSummary.From(document, chunks.Count));
     }
 }

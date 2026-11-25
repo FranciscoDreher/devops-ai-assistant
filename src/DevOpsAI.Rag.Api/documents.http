@@ -1,0 +1,35 @@
+@baseUrl = http://127.0.0.1:5082
+@documentId = cache-recovery
+
+### Add a runbook document
+PUT {{baseUrl}}/api/documents/{{documentId}}
+Content-Type: multipart/form-data; boundary=runbookBoundary
+
+--runbookBoundary
+Content-Disposition: form-data; name="file"; filename="cache-recovery.md"
+Content-Type: text/markdown
+
+# Cache recovery
+Restart the cache service and verify its health before restoring traffic.
+--runbookBoundary--
+
+### Replace the same document ID
+PUT {{baseUrl}}/api/documents/{{documentId}}
+Content-Type: multipart/form-data; boundary=runbookBoundary
+
+--runbookBoundary
+Content-Disposition: form-data; name="file"; filename="cache-recovery.md"
+Content-Type: text/markdown
+
+# Cache recovery
+Restart the cache service, verify health, and record the recovery outcome.
+--runbookBoundary--
+
+### List document metadata and status
+GET {{baseUrl}}/api/documents
+
+### Delete an existing document
+DELETE {{baseUrl}}/api/documents/{{documentId}}
+
+### Deleting a missing document returns 404
+DELETE {{baseUrl}}/api/documents/missing-document

@@ -144,6 +144,7 @@ public sealed class SqliteRunbookDocumentStore(RagDbContext dbContext) : IRunboo
                 document.ContentHash,
                 document.Version,
                 document.Status,
+                document.Chunks.Count,
                 document.CreatedAtUtc,
                 document.UpdatedAtUtc,
                 document.DeletedAtUtc))

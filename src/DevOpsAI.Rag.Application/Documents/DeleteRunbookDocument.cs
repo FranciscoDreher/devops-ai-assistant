@@ -51,6 +51,6 @@ public sealed class DeleteRunbookDocument
 
         return RunbookDocumentResult.FromDocument(
             RunbookDocumentOperationStatus.Deleted,
-            RunbookDocumentSummary.From(tombstone));
+            RunbookDocumentSummary.From(tombstone, chunkCount: 0));
     }
 }
