@@ -1,7 +1,9 @@
 using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Application.Ports;
 using DevOpsAI.Rag.Infrastructure.Embeddings;
+using DevOpsAI.Rag.Infrastructure.Generation;
 using DevOpsAI.Rag.Infrastructure.Persistence;
+using DevOpsAI.Rag.Infrastructure.Prompts;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
@@ -44,6 +46,16 @@ public static class DependencyInjection
             return new OllamaApiClient(serviceProvider.GetRequiredService<HttpClient>(), options.ModelId);
         });
         services.AddSingleton<ITextEmbeddingGenerator, OllamaTextEmbeddingGenerator>();
+        services.AddSingleton<IChatClient>(serviceProvider =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<OllamaChatOptions>>().Value;
+            options.Validate();
+            return new OllamaApiClient(
+                serviceProvider.GetRequiredService<HttpClient>(),
+                options.ModelId.Trim());
+        });
+        services.AddSingleton<IRunbookAnswerGenerator, OllamaRunbookAnswerGenerator>();
+        services.AddSingleton<IRunbookPromptProvider, FileRunbookPromptProvider>();
 
         return services;
     }

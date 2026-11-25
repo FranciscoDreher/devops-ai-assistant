@@ -1,6 +1,8 @@
 using System.Net;
+using DevOpsAI.Rag.Application.Chat;
 using DevOpsAI.Rag.Application.Configuration;
 using DevOpsAI.Rag.Application.Documents;
+using DevOpsAI.Rag.Application.Ports;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,5 +53,26 @@ public class RagApiSmokeTests : IClassFixture<WebApplicationFactory<Program>>
             () => validator.Validate("runbook", "runbook.md", new byte[5]));
 
         Assert.Equal(RunbookDocumentValidationErrorCode.DocumentTooLarge, exception.ErrorCode);
+    }
+
+    [Fact]
+    public async Task GroundedAnswerDependenciesResolveWithConfiguredModelsAndCopiedPrompts()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, configuration) =>
+                configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Ollama:ModelId"] = "test-embedding-model",
+                    ["Ollama:Chat:ModelId"] = "test-chat-model"
+                })));
+        await using var scope = factory.Services.CreateAsyncScope();
+
+        var generateAnswer = scope.ServiceProvider.GetRequiredService<GenerateRunbookAnswer>();
+        var promptProvider = scope.ServiceProvider.GetRequiredService<IRunbookPromptProvider>();
+        var prompt = await promptProvider.GetPromptAsync(CancellationToken.None);
+
+        Assert.NotNull(generateAnswer);
+        Assert.Contains("supplied retrieved runbook passages", prompt.SystemPrompt, StringComparison.Ordinal);
+        Assert.Contains("citedChunkIds", prompt.AnswerFormatPrompt, StringComparison.Ordinal);
     }
 }

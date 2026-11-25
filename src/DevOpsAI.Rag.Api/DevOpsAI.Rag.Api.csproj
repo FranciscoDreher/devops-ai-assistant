@@ -15,4 +15,10 @@
     <ProjectReference Include="../DevOpsAI.Rag.Infrastructure/DevOpsAI.Rag.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="../../docs/prompts/runbook-chatbot/*.md"
+             Link="docs/prompts/runbook-chatbot/%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
